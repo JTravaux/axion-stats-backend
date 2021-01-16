@@ -196,7 +196,7 @@ const _calculateStakingStats = async () => {
     _saveEvents(UNSTAKE_EVENTS_FILE, ALL_UNSTAKE_EVENTS);
 
     // Return the results
-    let results = _processEvents(SAVED_EVENTS[0], SAVED_EVENTS[1]);
+    let results = _processEvents(ALL_STAKE_EVENTS, ALL_UNSTAKE_EVENTS);
     results["block"] = Math.max(lastSavedStakeEventBlock+1, lastSavedUnstakeEventBlock+1);
     results["timestamp"] = Date.now();
     return results;
