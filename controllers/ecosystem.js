@@ -1,3 +1,4 @@
+const { addOne } = require('./db');
 const { ONE_TOKEN_18 } = require('../config.js');
 const { getLiquidEcoData } = require('./holders');
 const { getActiveStakesByAddress } = require('./staking');
@@ -44,12 +45,16 @@ const calculateEcosystem = () => {
             
             // Get final data
             const COMBINED_RESULTS = calculateEcosystemLevels(combined)
+            const RESULT = {
+                liquid_ecosystem: { ...LIQUID_RESULTS },
+                staking_ecosystem: { ...STAKED_RESULTS },
+                combined_ecosystem: { ...COMBINED_RESULTS }
+            }
+
+            // Save to DB
+            addOne("ecosystem", {...RESULT, timestamp: Date.now()})
             
-            resolve({ 
-                liquid_ecosystem:   {...LIQUID_RESULTS}, 
-                staking_ecosystem:  {...STAKED_RESULTS}, 
-                combined_ecosystem: {...COMBINED_RESULTS}
-            })
+            resolve(RESULT)
         } catch (err) {
             console.log(err);
             reject(err)

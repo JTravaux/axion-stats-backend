@@ -21,7 +21,7 @@ const getLiquidEcoData = async () => {
         readFile(FILE_PATH)
             .then(holders => { 
                 console.info(`Returning cached holder data. Holders: ${holders.data.length}, Cached as of: ${holders.time} (${new Date(holders.time).toLocaleDateString()})`)
-                return holders.data; 
+                return [...holders.data]; 
             })
             .catch(e => { 
                 console.error(`holders.js: getLiquidEcoData(): Could not get any holders - ${e.message}`)
