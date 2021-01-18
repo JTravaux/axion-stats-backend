@@ -193,19 +193,15 @@ staking_router.get('/fetch-total-staked', async (req, res) => {
         ///////////////
         const V1_START_BLOCK = 11248075;
         const V1_END_BLOCK = 11472614;
-        const V2_START_BLOCK = 11472615;
-        const V2_END_BLOCK = req.query.end || "latest";
 
-        const stakes_v1 = await _getEventsV1("Stake", V1_START_BLOCK, V1_END_BLOCK)
-        const stakes_v2 = await _getEvents("Stake", V2_START_BLOCK, V2_END_BLOCK)
-
-        const unstakes_v1 = await _getEventsV1("Unstake", V1_START_BLOCK, V1_END_BLOCK)
-        const unstakes_v2 = await _getEvents("Unstake", V2_START_BLOCK, V2_END_BLOCK)
-
+        const stakes_v1 = await _getEvents("Stake", "staking_v1", V1_START_BLOCK, V1_END_BLOCK)
+        const stakes_v2 = await _getEvents("Stake")
         STAKE_EVENTS = stakes_v1.concat(stakes_v2);
         SORTED_STAKES = STAKE_EVENTS.sort((a, b) => +b.block - +a.block)
         saveToFile(STAKE_EVENTS_FILE, SORTED_STAKES)
 
+        const unstakes_v1 = await _getEvents("Unstake", "staking_v1", V1_START_BLOCK, V1_END_BLOCK)
+        const unstakes_v2 = await _getEvents("Unstake")
         UNSTAKE_EVENTS = unstakes_v1.concat(unstakes_v2);
         SORTED_UNSTAKES = UNSTAKE_EVENTS.sort((a, b) => +b.block - +a.block)
         saveToFile(UNSTAKE_EVENTS_FILE, SORTED_UNSTAKES)

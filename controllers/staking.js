@@ -54,72 +54,49 @@ const _cleanDataV1 = (data, type) => {
     })
 }
 
-const _getEventsV1 = async (type, startBlock, endBlock) => {
-    return new Promise(resolve => {
-        CONTRACTS.staking_v1.getPastEvents(type, { fromBlock: startBlock, toBlock: endBlock }, async (error, events) => {
-            if (error && !error.message.includes("request rate limited")) {
-                const CURRENT_BLOCK = await web3.eth.getBlockNumber();
-                const BLOCKS_FROM_START = CURRENT_BLOCK - CONTRACT_FIRST_BLOCK;
-                const BLOCK_CHUNKS = splitInteger(BLOCKS_FROM_START, 25)
+const _getEvents = async (
+    type = 'Stake',
+    contract = "staking",
+    startBlock = 11472615, // v2 start
+    endBlock = "latest",
+    step = 20000
+) => {
+    let fromBlock = startBlock;
+    let toBlock = endBlock;
+    const between = endBlock - startBlock;
+    if (between > step) {
+        toBlock = startBlock + step;
+    }
 
-                let promises = [];
-                let startBlock = CONTRACT_FIRST_BLOCK;
-                let endBlock = CONTRACT_FIRST_BLOCK + BLOCK_CHUNKS[0];
+    console.log(`Getting ${type.toLowerCase()} events from '${contract}' contract...`);
 
-                for (let i = 0; i < BLOCK_CHUNKS.length; ++i) {
-                    promises.push(_getEventsV1(type, startBlock, endBlock));
-                    const newStartBlock = endBlock + 1;
-                    startBlock = newStartBlock;
-                    endBlock = newStartBlock + BLOCK_CHUNKS[i]
-                }
+    let events = [];
+    while (toBlock <= endBlock) {
+        try {
+            console.log(fromBlock, toBlock);
 
-                const RESULTS = await Promise.all(promises)
-                resolve([].concat.apply([], RESULTS))
-            } else if (error && error.message.includes("request rate limited")) {
-                console.log("staking.js - ERROR - Rate Limited")
-                resolve([])
+            const queriedEvents = await CONTRACTS[contract].getPastEvents(type, { fromBlock, toBlock });
+
+            events = [...events, ...queriedEvents];
+
+            fromBlock = toBlock + 1;
+            toBlock = fromBlock + step;
+
+            if (toBlock > endBlock && fromBlock < endBlock) {
+                toBlock = endBlock;
             }
-            else {
-                const CLEANED_DATA = _cleanDataV1(events, type);
-                resolve(CLEANED_DATA)
-            }
-        })
-    })
-}
+        } catch (error) {
+            console.log(error);
+        }
+    }
 
-// Get "type" events from the staking contract.
-const _getEvents = async (type, fromBlock, toBlock) => {
-    return new Promise(resolve => {
-        CONTRACTS.staking.getPastEvents(type, { fromBlock, toBlock }, async (error, events) => {
-            if (error && !error.message.includes("request rate limited")) {
-                const CURRENT_BLOCK = await web3.eth.getBlockNumber();
-                const BLOCKS_FROM_START = CURRENT_BLOCK - CONTRACT_FIRST_BLOCK_V2;
-                const BLOCK_CHUNKS = splitInteger(BLOCKS_FROM_START, 10)
-                
-                let promises = [];
-                let startBlock = CONTRACT_FIRST_BLOCK_V2;
-                let endBlock = CONTRACT_FIRST_BLOCK_V2 + BLOCK_CHUNKS[0];
-
-                for (let i = 0; i < BLOCK_CHUNKS.length; ++i) {
-                    promises.push(_getEvents(type, startBlock, endBlock));
-                    const newStartBlock = endBlock + 1;
-                    startBlock = newStartBlock;
-                    endBlock = newStartBlock + BLOCK_CHUNKS[i]
-                }
-
-                const RESULTS = await Promise.all(promises)
-                resolve([].concat.apply([], RESULTS))
-            } else if (error && error.message.includes("request rate limited")) {
-                console.log("staking.js - ERROR - Rate Limited")
-                resolve([])
-            }
-            else {
-                const CLEANED_DATA = _cleanData(events, type);
-                resolve(CLEANED_DATA)
-            }
-        })
-    })
-}
+    let cleaned;
+    if (contract === "staking_v1")
+        cleaned = _cleanDataV1(events, type);
+    else
+        cleaned = _cleanData(events, type);
+    return cleaned;
+};
 
 const _processEvents = (stake_events, unstake_events) => {
     let uniqueAddresses = [];
@@ -185,8 +162,8 @@ const _calculateStakingStats = async () => {
 
     // Get updated stakes & unstakes from last saved block
     const NEW_EVENTS = await Promise.all([
-        _getEvents("Stake", lastSavedStakeEventBlock + 1, 'latest'), 
-        _getEvents("Unstake", lastSavedUnstakeEventBlock + 1, 'latest') 
+        _getEvents("Stake", "staking", lastSavedStakeEventBlock + 1, 'latest'), 
+        _getEvents("Unstake", "staking", lastSavedUnstakeEventBlock + 1, 'latest') 
     ])
 
     const ALL_STAKE_EVENTS = uniqueify([...SAVED_EVENTS[0], ...NEW_EVENTS[0]]);
@@ -274,7 +251,6 @@ const getTotalShares = () => CONTRACTS.staking.methods.sharesTotalSupply().call(
 
 module.exports = {
     _getEvents,
-    _getEventsV1,
     getTotalShares,
     getStakingStats,
     getCompletedStakesByAddress,
