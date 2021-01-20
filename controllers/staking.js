@@ -1,9 +1,8 @@
 const fs = require("fs");
 const { CONTRACTS, ONE_TOKEN_18 , web3 } = require('../config');
-const { splitInteger, uniqueify, readFile } = require('../helpers');
+const { calculateAPY, uniqueify, readFile, getDays } = require('../helpers');
 
 const CONTRACT_FIRST_BLOCK = 11248075;
-const CONTRACT_FIRST_BLOCK_V2 = 11472614;
 const STAKE_EVENTS_FILE = "data/stake_events_raw.json";
 const UNSTAKE_EVENTS_FILE = "data/unstake_events_raw.json";
 

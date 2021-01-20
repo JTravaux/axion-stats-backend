@@ -1,24 +1,21 @@
-const { getEstimatedTrees, getCurrentAuctionReserves, getAuctions, getCurrentAuctionEnd, getWeeklyAuctionAXN } = require('../controllers/auction');
-
+const { getEstimatedTrees, getCurrentAuctionReserves, getAuctions, getCurrentAuctionEnd } = require('../controllers/auction');
 const express = require('express');
 const auction_router = express.Router();
 
-const AUTO_UPDATING_MINUTES = 5;
+const FINE_MINUTES = 300000;
+const ONE_SECOND = 1000;
 
+let treeCache;
 auction_router.get('/trees', async (req, res) => {
     try {
-        const results = await getEstimatedTrees();
-        res.status(200).send(results)
-    } catch (err) {
-        console.log(err);
-        res.sendStatus(500);
-    }
-})
-
-auction_router.get('/weekly', async (req, res) => {
-    try {
-        const results = await getWeeklyAuctionAXN();
-        res.status(200).send(results)
+        if (!treeCache) {
+            treeCache = await getEstimatedTrees();
+            setInterval(async () => { 
+                treeCache = await getEstimatedTrees() 
+            }, (FINE_MINUTES + (ONE_SECOND * 5)))
+            res.status(200).send(treeCache);
+        } else
+            res.status(200).send(treeCache)
     } catch (err) {
         console.log(err);
         res.sendStatus(500);
@@ -26,18 +23,14 @@ auction_router.get('/weekly', async (req, res) => {
 })
 
 let auctionReservesCache;
-let auctionReservesUpdater;
 auction_router.get('/current', async (req, res) => {
     try {
-        if (!auctionReservesUpdater) {
-            const result = await getCurrentAuctionReserves();
-            auctionReservesCache = result
-
-            auctionReservesUpdater = setInterval(() => {
-                getCurrentAuctionReserves().then(res => { auctionReservesCache = res }).catch(() => clearInterval(auctionReservesUpdater))
-            }, (1000 * 60) * AUTO_UPDATING_MINUTES)
-
-            res.status(200).send(result)
+        if (!auctionReservesCache) {
+            auctionReservesCache = await getCurrentAuctionReserves();
+            setInterval(async () => {
+                auctionReservesCache = await getCurrentAuctionReserves()
+            }, (FINE_MINUTES + (ONE_SECOND * 10)))
+            res.status(200).send(auctionReservesCache)
         } else
             res.status(200).send(auctionReservesCache)
     } catch (err) {
@@ -47,18 +40,14 @@ auction_router.get('/current', async (req, res) => {
 })
 
 let auctionCache;
-let auctionUpdater;
 auction_router.get('/auctions', async (req, res) => {
     try {
-        if (!auctionUpdater) {
-            const result = await getAuctions();
-            auctionCache = result
-
-            auctionUpdater = setInterval(() => {
-                getAuctions().then(res => { auctionCache = res }).catch(() => clearInterval(auctionUpdater))
-            }, (1000 * 60) * AUTO_UPDATING_MINUTES)
-
-            res.status(200).send(result)
+        if (!auctionCache) {
+            auctionCache = await getAuctions();
+            setInterval(async () => {
+                auctionCache = await getAuctions()
+            }, (FINE_MINUTES + (ONE_SECOND * 15)))
+            res.status(200).send(auctionCache)
         } else
             res.status(200).send(auctionCache)
     } catch (err) {

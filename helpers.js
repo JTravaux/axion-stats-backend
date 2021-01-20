@@ -125,10 +125,19 @@ const readFile = fileName => {
     })
 }
 
+const getDays = (startMs, endMs) => {
+    const nowMs = Date.now();
+    const end = nowMs < endMs ? nowMs : endMs;
+    return (end - startMs) / dayMs;
+}
+const calculateAPY = (interest, principal, daysStaked) => (((interest * 100) /  principal) / daysStaked) * 365
+
 module.exports = {
+    getDays,
     readFile,
     uniqueify,
     saveToFile,
     splitInteger,
+    calculateAPY,
     calculateEcosystemLevels,
 }

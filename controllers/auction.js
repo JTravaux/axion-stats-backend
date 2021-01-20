@@ -1,79 +1,33 @@
 const moment = require('moment');
 const fetch = require('node-fetch');
-const { saveToFile, readFile, uniqueify } = require('../helpers');
+const { saveToFile, readFile } = require('../helpers');
 const { Fetcher, Route, WETH} = require('@uniswap/sdk');
-const { USDT, BLOXY_GET_ETH_BALANCE, BLOXY_GET_WEEKLY_AUCTION_BALANCE, PROVIDER, CONTRACTS, ONE_TOKEN_18, JACK_ADDRESS_OLD_AMOUNT } = require('../config');
+const { USDT, BLOXY_GET_WEEKLY_AUCTION_BALANCE, PROVIDER, CONTRACTS, ONE_TOKEN_18 } = require('../config');
 
-let lastEthPrice = 0;
-let lastEthBalance = 0;
-let ethPriceUpdater = null;
-let ethBalanceUpdater = null;
 const AUCTION_HISTORY_FILE = "data/auction_history.json";
-
-// METHODS
-const _startETHPriceAutoUpdater = () => {
-    ethPriceUpdater = setInterval(async () => {
-        try {
-            const pair = await Fetcher.fetchPairData(USDT, WETH[USDT.chainId], PROVIDER)
-            lastEthPrice = new Route([pair], WETH[USDT.chainId]).midPrice.toSignificant(6);
-        } catch (err) {
-            clearInterval(ethPriceUpdater);
-            ethPriceUpdater = null;
-        }
-    }, 1000 * (60 * 10)) // 10 minutes
-}
-
-const _startBalanceAutoUpdater = () => {
-    ethBalanceUpdater = setInterval(async () => {
-        try {
-            const RES = await fetch(BLOXY_GET_ETH_BALANCE);
-            const RES_JSON = await RES.json()
-            lastEthBalance = RES_JSON[0].received_amount += JACK_ADDRESS_OLD_AMOUNT;
-        } catch (err) {
-            clearInterval(ethBalanceUpdater);
-            ethBalanceUpdater = null;
-        }
-    }, 1000 * (60 * 1)) // 1 minute
-}
 
 const getEstimatedTrees = () => {
     return new Promise(async (resolve, reject) => {
         try {
             // Get ETH Price
-            if (!ethPriceUpdater) {
-                const pair = await Fetcher.fetchPairData(USDT, WETH[USDT.chainId], PROVIDER)
-                lastEthPrice = new Route([pair], WETH[USDT.chainId]).midPrice.toSignificant(6);
-                _startETHPriceAutoUpdater();
-            }
+            const pair = await Fetcher.fetchPairData(USDT, WETH[USDT.chainId], PROVIDER)
+            const ethPrice = new Route([pair], WETH[USDT.chainId]).midPrice.toSignificant(6);
 
             // Get ETH Balance
-            if (!ethBalanceUpdater) {
-                const RES = await fetch(BLOXY_GET_ETH_BALANCE);
-                const RES_JSON = await RES.json()
-                lastEthBalance = RES_JSON[0].received_amount += JACK_ADDRESS_OLD_AMOUNT;
-                _startBalanceAutoUpdater();
-            }
+            const AUCTIONS = await readFile(AUCTION_HISTORY_FILE)
+            const TOTAL_ETH = AUCTIONS.reduce((acc, auction) => acc + auction.eth, 0)
 
             // Calculate Trees
-            const FIVE_PERCENT_ETH = lastEthBalance * 0.05;
-            const USDT_FOR_TREES = FIVE_PERCENT_ETH * Number(lastEthPrice);
+            const ONE_PERCENT_ETH = TOTAL_ETH * 0.01;
+            const USDT_FOR_TREES = ONE_PERCENT_ETH * +ethPrice;
 
             // Save result and block number to
             resolve({ 
                 trees: Math.floor(USDT_FOR_TREES / 0.10), 
                 amount: USDT_FOR_TREES,
-                eth: FIVE_PERCENT_ETH
+                eth: ONE_PERCENT_ETH
             })
         } catch (err) { reject(err) }
-    })
-}
-
-const getWeeklyAuctionAXN = () => {
-    return new Promise(async (resolve, reject) => {
-        const result = await fetch(BLOXY_GET_WEEKLY_AUCTION_BALANCE);
-        const resultJSON = await result.json();
-        const AXN_BALANCE = resultJSON[0].balance;
-        resolve({axn: AXN_BALANCE})
     })
 }
 
@@ -176,7 +130,6 @@ const getCurrentAuctionEnd = () => {
 module.exports = {
     getAuctions,
     getEstimatedTrees,
-    getWeeklyAuctionAXN,
     getCurrentAuctionEnd,
     getCurrentAuctionReserves,
 }
