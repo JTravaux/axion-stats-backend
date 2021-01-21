@@ -163,9 +163,9 @@ staking_router.get('/totalShares', async (req, res) => {
     try {
         if (!totalSharesCache) {
             totalSharesCache = await getTotalShares();
-            res.status(200).send({ shareRate: totalSharesCache / ONE_TOKEN_18 })
+            res.status(200).send({ totalShares: totalSharesCache / ONE_TOKEN_18 })
         } else
-            res.status(200).send({ shareRate: totalSharesCache / ONE_TOKEN_18 })
+            res.status(200).send({ totalShares: totalSharesCache / ONE_TOKEN_18 })
     } catch (err) {
         console.log("staking_routes error: ", err);
         res.status(500).send({ message: "There was an error pulling the share rate." });
