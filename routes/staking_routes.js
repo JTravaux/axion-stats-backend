@@ -159,6 +159,19 @@ staking_router.get('/shareRate', async (req, res) => {
     }
 })
 
+staking_router.get('/totalShares', async (req, res) => {
+    try {
+        if (!totalSharesCache) {
+            totalSharesCache = await getTotalShares();
+            res.status(200).send({ shareRate: totalSharesCache / ONE_TOKEN_18 })
+        } else
+            res.status(200).send({ shareRate: totalSharesCache / ONE_TOKEN_18 })
+    } catch (err) {
+        console.log("staking_routes error: ", err);
+        res.status(500).send({ message: "There was an error pulling the share rate." });
+    }
+})
+
 const PASSWORD = "AxionDev79"
 staking_router.get('/refresh-data', async (req, res) => {
     const KEY = req.query.key;
