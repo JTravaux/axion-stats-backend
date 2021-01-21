@@ -3,7 +3,7 @@ const staking_router = express.Router();
 const { readFile, saveToFile } = require('../helpers')
 const { addOne } = require('../controllers/db.js');
 
-const { getStakingStats, getActiveStakesByAddress, getCompletedStakesByAddress, getStakeUnstakeEvents, getTotalShares, _getEvents, _getEventsV1 } = require('../controllers/staking');
+const { getStakingStats, getActiveStakesByAddress, getCompletedStakesByAddress, getStakeUnstakeEvents, getTotalShares, _getEvents, getShareRate } = require('../controllers/staking');
 const { ONE_TOKEN_18 } = require('../config');
 
 let totalsCache;
@@ -140,6 +140,25 @@ staking_router.get('/latest-events/:num?', async (req, res) => {
     }
 })
 
+let shareRateCache;
+staking_router.get('/shareRate', async (req, res) => {
+    try {
+        if (!shareRateCache) {
+            let shareRate = await getShareRate();
+            shareRateCache = shareRate / ONE_TOKEN_18
+            setInterval(async () => {
+                let shareRate = await getShareRate();
+                shareRateCache = shareRate / ONE_TOKEN_18
+            }, UPDATE_MS * 3)
+            res.status(200).send({ shareRate: shareRateCache })
+        } else
+            res.status(200).send({ shareRate: shareRateCache })
+    } catch (err) {
+        console.log("staking_routes error: ", err);
+        res.status(500).send({ message: "There was an error pulling the share rate." });
+    }
+})
+
 const PASSWORD = "AxionDev79"
 staking_router.get('/refresh-data', async (req, res) => {
     const KEY = req.query.key;
@@ -155,13 +174,13 @@ staking_router.get('/refresh-data', async (req, res) => {
         const V2_START_BLOCK = 11472615;
         const V2_END_BLOCK = "latest";
 
-        const stakes_v1 = await _getEventsV1("Stake", V1_START_BLOCK, V1_END_BLOCK)
-        const stakes_v2 = await _getEvents("Stake", V2_START_BLOCK, V2_END_BLOCK)
+        const stakes_v1 = await _getEvents("Stake", "staking_v1", V1_START_BLOCK, V1_END_BLOCK)
+        const stakes_v2 = await _getEvents("Stake")
         STAKE_EVENTS = stakes_v1.concat(stakes_v2).sort((a, b) => +b.block - +a.block);
         await saveToFile(STAKE_EVENTS_FILE, STAKE_EVENTS)
 
-        const unstakes_v1 = await _getEventsV1("Unstake", V1_START_BLOCK, V1_END_BLOCK)
-        const unstakes_v2 = await _getEvents("Unstake", V2_START_BLOCK, V2_END_BLOCK)
+         const unstakes_v1 = await _getEvents("Unstake", "staking_v1", V1_START_BLOCK, V1_END_BLOCK)
+        const unstakes_v2 = await _getEvents("Unstake")
         UNSTAKE_EVENTS = unstakes_v1.concat(unstakes_v2).sort((a, b) => +b.block - +a.block);
         await saveToFile(UNSTAKE_EVENTS_FILE, UNSTAKE_EVENTS)
 

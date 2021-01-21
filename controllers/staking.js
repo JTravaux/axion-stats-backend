@@ -247,9 +247,11 @@ const getStakeUnstakeEvents = async (num) => {
 }
 
 const getTotalShares = () => CONTRACTS.staking.methods.sharesTotalSupply().call();
+const getShareRate = () => CONTRACTS.staking.methods.shareRate().call();
 
 module.exports = {
     _getEvents,
+    getShareRate,
     getTotalShares,
     getStakingStats,
     getCompletedStakesByAddress,
