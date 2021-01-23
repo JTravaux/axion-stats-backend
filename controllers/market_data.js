@@ -1,6 +1,6 @@
 const fetch = require('node-fetch');
 const { getLiquidEcoData } = require('./holders')
-const { Fetcher, ChainId, Route, WETH, Trade, TokenAmount, TradeType } = require('@uniswap/sdk');
+const { Fetcher, ChainId, Route, WETH, Trade, TokenAmount, TradeType, Token } = require('@uniswap/sdk');
 const { ONE_TOKEN_18, PROVIDER, AXION, USDT, COINGECKO_VOLUME_INFO_ENDPOINT, CONTRACTS, BLOXY_TOKEN_INFO_ENDPOINT, web3 } = require('../config');
 
 // METHODS
@@ -31,6 +31,18 @@ const _getUpdateSupplyEtherscan = () => {
             setTimeout(() => { supplyAPI = "etherscan" }, 1000 * (60 * 30))
             rej(err)
         })
+    })
+}
+
+const getEthUsdPrice = () => {
+    return new Promise(async (resolve, reject) => {
+        try {
+            const DAI = new Token(ChainId.MAINNET, '0x6B175474E89094C44Da98b954EedeAC495271d0F', 18)
+            const pair = await Fetcher.fetchPairData(DAI, WETH[DAI.chainId])
+            const route = new Route([pair], WETH[DAI.chainId])
+
+            resolve({ usd: route.midPrice.toSignificant(6) });
+        } catch (err) { reject(err) }
     })
 }
 
@@ -124,5 +136,6 @@ module.exports = {
     getAxnPerEth,
     getUsdtPerAxn,
     getTotalSupply,
+    getEthUsdPrice,
     getFixedLiquidAxn,
 }
