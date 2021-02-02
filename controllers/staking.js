@@ -113,7 +113,8 @@ const _processEvents = (stake_events, unstake_events) => {
             return;
 
         const amount = ev.amount / ONE_TOKEN_18;
-        const is5555 = Math.floor((ev.end - ev.start) / 86400) === 5555;
+        const days = Math.floor((ev.end - ev.start) / 86400);
+        const is5555 = days === 5555;
 
         if (amount >= 2500000 && is5555) {
             total_active_stakes_5555++;
@@ -127,6 +128,7 @@ const _processEvents = (stake_events, unstake_events) => {
             uniqueAddresses.push(ev.address)
 
         total_active_shares += ev.shares / ONE_TOKEN_18; 
+        total_stake_length += days;
         total_axn_staked += amount;
     })
 
