@@ -69,7 +69,7 @@ const getUsdtPerAxn = () => {
 
             const TRADE = new Trade(
                 new Route([AXIONwETHPair, wETHUSDTPair], AXION),
-                new TokenAmount(AXION, ONE_TOKEN_18),
+                new TokenAmount(AXION, `${ONE_TOKEN_18}00`),
                 TradeType.EXACT_INPUT
             )
 

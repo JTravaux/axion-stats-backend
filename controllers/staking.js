@@ -104,30 +104,30 @@ const _processEvents = (stake_events, unstake_events) => {
     let total_active_shares = 0;
     let total_active_stakes_5555 = 0
     let total_axn_staked_5555 = 0;
+    let total_active_stakes_5555_any = 0
+    let total_axn_staked_5555_any = 0;
     let total_active_stakes = (stake_events.length - unstake_events.length);
 
     stake_events.forEach(ev => {
         if (unstake_events.find(ue => ue.stakeNum === ev.stakeNum)) 
             return;
 
-        const amount = ev.amount / ONE_TOKEN_18; // TODO: do properly
-        const shares = ev.shares / ONE_TOKEN_18; // TODO: do properly
-        const length = Math.floor((ev.end - ev.start) / 86400);
+        const amount = ev.amount / ONE_TOKEN_18;
+        const is5555 = Math.floor((ev.end - ev.start) / 86400) === 5555;
 
-        total_axn_staked += amount;
-        total_stake_length += length;
-        total_active_shares += shares;
-
-        if (amount >= 2500000 && length === 5555) {
+        if (amount >= 2500000 && is5555) {
             total_active_stakes_5555++;
             total_axn_staked_5555 += amount
+        } else if (is5555) {
+            total_active_stakes_5555_any++;
+            total_axn_staked_5555_any += amount
         }
-
-        if(ev.shares === 0)
-            console.log("0 SHARES", ev)
 
         if(!uniqueAddresses.includes(ev.address))
             uniqueAddresses.push(ev.address)
+
+        total_active_shares += ev.shares / ONE_TOKEN_18; 
+        total_axn_staked += amount;
     })
 
     return {
@@ -175,6 +175,11 @@ const _calculateStakingStats = async () => {
     let results = _processEvents(ALL_STAKE_EVENTS, ALL_UNSTAKE_EVENTS);
     results["block"] = Math.max(lastSavedStakeEventBlock+1, lastSavedUnstakeEventBlock+1);
     results["timestamp"] = Date.now();
+
+    // Get total staked
+    const totalStakedAmount = await getTotalStaked();
+    results["total_axn_staked"] = totalStakedAmount / ONE_TOKEN_18
+
     return results;
 }
 
@@ -247,11 +252,13 @@ const getStakeUnstakeEvents = async (num) => {
 }
 
 const getTotalShares = () => CONTRACTS.staking.methods.sharesTotalSupply().call();
+const getTotalStaked = () => CONTRACTS.staking.methods.totalStakedAmount().call();
 const getShareRate = () => CONTRACTS.staking.methods.shareRate().call();
 
 module.exports = {
     _getEvents,
     getShareRate,
+    getTotalStaked,
     getTotalShares,
     getStakingStats,
     getCompletedStakesByAddress,
