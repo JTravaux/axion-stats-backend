@@ -118,14 +118,16 @@ const _processEvents = (stake_events, unstake_events) => {
         if (unstake_events.find(ue => ue.stakeNum === ev.stakeNum)) 
             return;
 
-        const amount = ev.amount / ONE_TOKEN_18;
+        const amount = +ev.amount / ONE_TOKEN_18;
         const days = Math.floor((ev.end - ev.start) / 86400);
-        const is5555 = days === 5555;
+        const is5555 = days >= 5555;
 
         if (amount >= 2500000 && is5555) {
             total_active_stakes_5555++;
             total_axn_staked_5555 += amount
-        } else if (is5555) {
+        }
+
+        if (is5555) {
             total_active_stakes_5555_any++;
             total_axn_staked_5555_any += amount
         }
@@ -209,7 +211,7 @@ const getActiveStakesByAddress = async () => {
             const STAKE_EVENTS = await readFile(STAKE_EVENTS_FILE);
             const UNSTAKE_EVENTS = await readFile(UNSTAKE_EVENTS_FILE);
 
-            STAKE_EVENTS.filter(s => !UNSTAKE_EVENTS.find(u => u.stakeNum === s.stakeNum)).forEach(e => {
+            STAKE_EVENTS.filter(s => !UNSTAKE_EVENTS.find(u => +u.stakeNum === +s.stakeNum)).forEach(e => {
                 if (!unique_addresses[e.address])
                     unique_addresses[e.address] = [e]
                 else
@@ -283,7 +285,7 @@ const updateMaxSharesData = async () => {
         if (idx !== -1) {
             stake.amount = sortedUpgradeEvents[idx].returnValues.newAmount;
             stake.shares = sortedUpgradeEvents[idx].returnValues.newShares;
-            stake.end = sortedUpgradeEvents[idx].returnValues.end;
+            stake.end = +sortedUpgradeEvents[idx].returnValues.end;
         }
     }
 
