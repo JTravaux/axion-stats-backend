@@ -3,7 +3,7 @@ const staking_router = express.Router();
 const { readFile, saveToFile } = require('../helpers')
 const { addOne } = require('../controllers/db.js');
 
-const { getStakingStats, getActiveStakesByAddress, getCompletedStakesByAddress, getStakeUnstakeEvents, getTotalShares, _getEvents, getShareRate } = require('../controllers/staking');
+const { getStakingStats, getActiveStakesByAddress, getCompletedStakesByAddress, getStakeUnstakeEvents, getTotalShares, _getEvents, getShareRate, updateMaxSharesData, updateStakeEventsData, updateUnstakeEventsData } = require('../controllers/staking');
 const { ONE_TOKEN_18 } = require('../config');
 
 let totalsCache;
@@ -37,6 +37,7 @@ staking_router.get('/totals', async (req, res) => {
 })
 
 
+const STAKE_UPGRADES_FILE = "data/stake_upgrades_raw.json";
 const STAKE_EVENTS_FILE = "data/stake_events_raw.json";
 const UNSTAKE_EVENTS_FILE = "data/unstake_events_raw.json";
 
@@ -84,8 +85,8 @@ staking_router.get('/stakes/active/:addr', async (req, res) => {
             }, UPDATE_MS)
         }
 
-        const TOTAL_AXN_STAKED = result.reduce((a, b) => a + (b.amount / ONE_TOKEN_18), 0);
-        const TOTAL_SHARES_STAKES = result.reduce((a, b) => a + (b.shares / ONE_TOKEN_18), 0);
+        const TOTAL_AXN_STAKED = result.reduce((a, b) => a + (+b.amount / ONE_TOKEN_18), 0);
+        const TOTAL_SHARES_STAKES = result.reduce((a, b) => a + (+b.shares / ONE_TOKEN_18), 0);
 
         let totals = {
             total_axn: TOTAL_AXN_STAKED,
@@ -173,31 +174,34 @@ staking_router.get('/totalShares', async (req, res) => {
 })
 
 const PASSWORD = "AxionDev79"
-staking_router.get('/refresh-data', async (req, res) => {
+staking_router.get('/refresh', async (req, res) => {
     const KEY = req.query.key;
+    const TYPE = req.query.type;
 
     if (!KEY || KEY !== PASSWORD) {
         res.sendStatus(403);
         return;
     }
+    
+    if (!TYPE || (TYPE !== "StakeUnstake" && TYPE !== "MaxShareUpgrade" && TYPE !== "Stake" && TYPE !== "Unstake")) {
+        res.status(500).send("Invalid type. Must be either: StakeUnstake, MaxShareUpgrade, Stake, Unstake");
+        return;
+    }
 
     try {
-        const V1_START_BLOCK = 11248075;
-        const V1_END_BLOCK = 11472614;
-        const V2_START_BLOCK = 11472615;
-        const V2_END_BLOCK = "latest";
-
-        const stakes_v1 = await _getEvents("Stake", "staking_v1", V1_START_BLOCK, V1_END_BLOCK)
-        const stakes_v2 = await _getEvents("Stake")
-        STAKE_EVENTS = stakes_v1.concat(stakes_v2).sort((a, b) => +b.block - +a.block);
-        await saveToFile(STAKE_EVENTS_FILE, STAKE_EVENTS)
-
-         const unstakes_v1 = await _getEvents("Unstake", "staking_v1", V1_START_BLOCK, V1_END_BLOCK)
-        const unstakes_v2 = await _getEvents("Unstake")
-        UNSTAKE_EVENTS = unstakes_v1.concat(unstakes_v2).sort((a, b) => +b.block - +a.block);
-        await saveToFile(UNSTAKE_EVENTS_FILE, UNSTAKE_EVENTS)
-
-        res.status(200).send({ status: "done!" })
+        let result = []
+        if (TYPE === "StakeUnstake") {
+            const stakeEvents = await updateStakeEventsData();
+            const unstakeEvents = await updateUnstakeEventsData();
+            result = stakeEvents.concat(unstakeEvents)
+        }
+        else if (TYPE === "Stake") 
+            result = await updateStakeEventsData();
+        else if (TYPE === "Unstake")
+            result = await updateUnstakeEventsData();
+        else if (TYPE === "MaxShareUpgrade")
+            result = await updateMaxSharesData();
+        res.status(200).send({ status: `Done! Got a total of ${result.length} ${TYPE} new events.` })
     } catch (err) { res.status(500).send({ status: err.message }) }
 })
 
@@ -230,13 +234,13 @@ staking_router.get('/fetch-total-staked', async (req, res) => {
         const stakes_v2 = await _getEvents("Stake")
         STAKE_EVENTS = stakes_v1.concat(stakes_v2);
         SORTED_STAKES = STAKE_EVENTS.sort((a, b) => +b.block - +a.block)
-        saveToFile(STAKE_EVENTS_FILE, SORTED_STAKES)
+        await saveToFile(STAKE_EVENTS_FILE, SORTED_STAKES)
 
         const unstakes_v1 = await _getEvents("Unstake", "staking_v1", V1_START_BLOCK, V1_END_BLOCK)
         const unstakes_v2 = await _getEvents("Unstake")
         UNSTAKE_EVENTS = unstakes_v1.concat(unstakes_v2);
         SORTED_UNSTAKES = UNSTAKE_EVENTS.sort((a, b) => +b.block - +a.block)
-        saveToFile(UNSTAKE_EVENTS_FILE, SORTED_UNSTAKES)
+        await saveToFile(UNSTAKE_EVENTS_FILE, SORTED_UNSTAKES)
     } else {
         ////////////////
         // FILE DATA //

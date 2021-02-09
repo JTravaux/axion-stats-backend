@@ -1,8 +1,9 @@
 const fs = require("fs");
 const { CONTRACTS, ONE_TOKEN_18 , web3 } = require('../config');
-const { calculateAPY, uniqueify, readFile, getDays } = require('../helpers');
+const { uniqueify, readFile, saveToFile } = require('../helpers');
 
 const CONTRACT_FIRST_BLOCK = 11248075;
+const STAKE_UPGRADES_FILE = "data/stake_upgrades_raw.json";
 const STAKE_EVENTS_FILE = "data/stake_events_raw.json";
 const UNSTAKE_EVENTS_FILE = "data/unstake_events_raw.json";
 
@@ -22,12 +23,12 @@ const _cleanData = (data, type) => {
     return dat.map(d => {
         return {
             address: d.returnValues.account,
-            stakeNum: d.returnValues.sessionId,
+            stakeNum: +d.returnValues.sessionId,
             amount: d.returnValues.amount,
-            start: d.returnValues.start,
-            end: d.returnValues.end,
+            start: +d.returnValues.start,
+            end: +d.returnValues.end,
             shares: d.returnValues.shares,
-            block: d.blockNumber,
+            block: +d.blockNumber,
             txID: d.transactionHash
         }
     })
@@ -42,12 +43,12 @@ const _cleanDataV1 = (data, type) => {
     return dat.map(d => {
         return {
             address: d.returnValues.account,
-            stakeNum: d.returnValues.sessionId,
+            stakeNum: +d.returnValues.sessionId,
             amount: d.returnValues.amount,
-            start: d.returnValues.start,
-            end: d.returnValues.end,
+            start: +d.returnValues.start,
+            end: +d.returnValues.end,
             shares: d.returnValues.shares,
-            block: d.blockNumber,
+            block: +d.blockNumber,
             txID: d.transactionHash
         }
     })
@@ -58,7 +59,8 @@ const _getEvents = async (
     contract = "staking",
     startBlock = 11472615, // v2 start
     endBlock = "latest",
-    step = 20000
+    step = 10000,
+    clean = true,
 ) => {
     let fromBlock = startBlock;
     let toBlock = endBlock;
@@ -67,12 +69,12 @@ const _getEvents = async (
         toBlock = startBlock + step;
     }
 
-    console.log(`Getting ${type.toLowerCase()} events from '${contract}' contract...`);
+    console.log(`\nGetting ${type.toLowerCase()} events from '${contract}' contract...`);
 
     let events = [];
     while (toBlock <= endBlock) {
         try {
-            console.log(fromBlock, toBlock);
+            console.log(fromBlock, toBlock)
 
             const queriedEvents = await CONTRACTS[contract].getPastEvents(type, { fromBlock, toBlock });
 
@@ -90,10 +92,14 @@ const _getEvents = async (
     }
 
     let cleaned;
-    if (contract === "staking_v1")
-        cleaned = _cleanDataV1(events, type);
-    else
-        cleaned = _cleanData(events, type);
+    if (clean) {
+        if (contract === "staking_v1")
+            cleaned = _cleanDataV1(events, type);
+        else
+            cleaned = _cleanData(events, type);
+    } else
+        cleaned = events
+
     return cleaned;
 };
 
@@ -138,6 +144,8 @@ const _processEvents = (stake_events, unstake_events) => {
         total_active_stakes,
         total_axn_staked_5555,
         total_active_stakes_5555,
+        total_axn_staked_5555_any,
+        total_active_stakes_5555_any,
         
         unique_holders: uniqueAddresses.length,
         avg_axn: total_axn_staked / total_active_stakes,
@@ -253,6 +261,55 @@ const getStakeUnstakeEvents = async (num) => {
     })
 }
 
+const updateMaxSharesData = async () => {
+
+    // Get saved events
+    const CURRENT_STAKE_UPGRADES_EVENTS = await readFile(STAKE_UPGRADES_FILE);
+    let maxSharesStartBlock = 11818550;
+    if (CURRENT_STAKE_UPGRADES_EVENTS.length > 0)
+        maxSharesStartBlock = CURRENT_STAKE_UPGRADES_EVENTS[0].blockNumber;
+
+    // Get new events
+    const NEW_MAX_SHARES_EVENTS = await _getEvents("MaxShareUpgrade", "staking", maxSharesStartBlock + 1, 'latest', 10000, false);
+    const uniqueConcat = uniqueify(CURRENT_STAKE_UPGRADES_EVENTS.concat(NEW_MAX_SHARES_EVENTS))
+    const sortedUpgradeEvents = uniqueConcat.sort((a, b) => b.blockNumber - a.blockNumber);
+    await saveToFile(STAKE_UPGRADES_FILE, sortedUpgradeEvents)
+
+    // Upgrade the stakes
+    let stakeEvents = await readFile(STAKE_EVENTS_FILE);
+
+    for (let stake of stakeEvents) {
+        const idx = sortedUpgradeEvents.findIndex(e => +e.returnValues.sessionId === stake.stakeNum)
+        if (idx !== -1) {
+            stake.amount = sortedUpgradeEvents[idx].returnValues.newAmount;
+            stake.shares = sortedUpgradeEvents[idx].returnValues.newShares;
+            stake.end = sortedUpgradeEvents[idx].returnValues.end;
+        }
+    }
+
+    await saveToFile(STAKE_EVENTS_FILE, uniqueify(stakeEvents))
+    return NEW_MAX_SHARES_EVENTS;
+}
+
+
+const V1_START_BLOCK = 11248075;
+const V1_END_BLOCK = 11472614;
+const updateStakeEventsData = async () => {
+    const stakes_v1 = await _getEvents("Stake", "staking_v1", V1_START_BLOCK, V1_END_BLOCK)
+    const stakes_v2 = await _getEvents("Stake")
+    STAKE_EVENTS = stakes_v1.concat(stakes_v2).sort((a, b) => +b.block - +a.block);
+    await saveToFile(STAKE_EVENTS_FILE, STAKE_EVENTS)
+    return STAKE_EVENTS;
+}
+
+const updateUnstakeEventsData = async () => {
+    const unstakes_v1 = await _getEvents("Unstake", "staking_v1", V1_START_BLOCK, V1_END_BLOCK)
+    const unstakes_v2 = await _getEvents("Unstake")
+    UNSTAKE_EVENTS = unstakes_v1.concat(unstakes_v2).sort((a, b) => +b.block - +a.block);
+    await saveToFile(UNSTAKE_EVENTS_FILE, UNSTAKE_EVENTS)
+    return UNSTAKE_EVENTS;
+}
+
 const getTotalShares = () => CONTRACTS.staking.methods.sharesTotalSupply().call();
 const getTotalStaked = () => CONTRACTS.staking.methods.totalStakedAmount().call();
 const getShareRate = () => CONTRACTS.staking.methods.shareRate().call();
@@ -263,7 +320,10 @@ module.exports = {
     getTotalStaked,
     getTotalShares,
     getStakingStats,
-    getCompletedStakesByAddress,
+    updateMaxSharesData,
+    updateStakeEventsData,
     getStakeUnstakeEvents,
+    updateUnstakeEventsData,
     getActiveStakesByAddress,
+    getCompletedStakesByAddress,
 }
