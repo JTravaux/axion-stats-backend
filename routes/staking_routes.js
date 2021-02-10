@@ -17,10 +17,12 @@ staking_router.get('/totals', async (req, res) => {
             // Get and save results
             totalsCache = await getStakingStats();
             addOne("staking_stats", totalsCache);
+            updateMaxSharesData();
 
             // Refresh stats
             setInterval(async () => {
                 totalsCache = await getStakingStats();
+                await updateMaxSharesData();
             }, UPDATE_MS);
 
             // Update DB every 30 mins
