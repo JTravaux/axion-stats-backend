@@ -285,8 +285,8 @@ const updateMaxSharesData = async () => {
         if (idx !== -1) {
             stake.amount = sortedUpgradeEvents[idx].returnValues.newAmount;
             stake.shares = sortedUpgradeEvents[idx].returnValues.newShares;
-            stake.end = +sortedUpgradeEvents[idx].returnValues.end;
             stake.start = +sortedUpgradeEvents[idx].returnValues.start;
+            stake.end = +sortedUpgradeEvents[idx].returnValues.end;
         }
     }
 
