@@ -7,8 +7,11 @@ const { getStakingStats, getActiveStakesByAddress, getCompletedStakesByAddress, 
 const { ONE_TOKEN_18 } = require('../config');
 
 let totalsCache;
+let totalShares;
 let updateMinutes = 5;
 const UPDATE_MS = (1000 * 60) * updateMinutes;
+const STAKE_EVENTS_FILE = "data/stake_events_raw.json";
+const UNSTAKE_EVENTS_FILE = "data/unstake_events_raw.json";
 
 staking_router.get('/totals', async (req, res) => {
     try {
@@ -38,11 +41,6 @@ staking_router.get('/totals', async (req, res) => {
     }
 })
 
-
-const STAKE_UPGRADES_FILE = "data/stake_upgrades_raw.json";
-const STAKE_EVENTS_FILE = "data/stake_events_raw.json";
-const UNSTAKE_EVENTS_FILE = "data/unstake_events_raw.json";
-
 staking_router.get('/all-stake-events', async (req, res) => {
     try {
         const STAKE_EVENTS = await readFile(STAKE_EVENTS_FILE);
@@ -64,7 +62,6 @@ staking_router.get('/all-unstake-events', async (req, res) => {
 })
 
 let stakesByAddressCache;
-let totalSharesCache;
 staking_router.get('/stakes/active/:addr', async (req, res) => {
     const REQ_ADDR = req.params.addr
     
@@ -80,20 +77,13 @@ staking_router.get('/stakes/active/:addr', async (req, res) => {
         if (stakesByAddressCache[REQ_ADDR])
             result = stakesByAddressCache[REQ_ADDR];
 
-        if (!totalSharesCache) {
-            totalSharesCache = await getTotalShares();
-            setInterval(async () => {
-                totalSharesCache = await getTotalShares();
-            }, UPDATE_MS)
-        }
-
         const TOTAL_AXN_STAKED = result.reduce((a, b) => a + (+b.amount / ONE_TOKEN_18), 0);
         const TOTAL_SHARES_STAKES = result.reduce((a, b) => a + (+b.shares / ONE_TOKEN_18), 0);
 
         let totals = {
             total_axn: TOTAL_AXN_STAKED,
             total_shares: TOTAL_SHARES_STAKES,
-            global_shares: totalSharesCache / ONE_TOKEN_18
+            global_shares: totalShares / ONE_TOKEN_18
         }
 
         res.status(200).send({
@@ -164,11 +154,11 @@ staking_router.get('/shareRate', async (req, res) => {
 
 staking_router.get('/totalShares', async (req, res) => {
     try {
-        if (!totalSharesCache) {
-            totalSharesCache = await getTotalShares();
-            res.status(200).send({ totalShares: totalSharesCache / ONE_TOKEN_18 })
+        if (!totalShares) {
+            totalShares = await getTotalShares();
+            res.status(200).send({ totalShares: totalShares / ONE_TOKEN_18 })
         } else
-            res.status(200).send({ totalShares: totalSharesCache / ONE_TOKEN_18 })
+            res.status(200).send({ totalShares: totalShares / ONE_TOKEN_18 })
     } catch (err) {
         console.log("staking_routes error: ", err);
         res.status(500).send({ message: "There was an error pulling the share rate." });
