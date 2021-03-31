@@ -1,7 +1,7 @@
 const fetch = require('node-fetch');
 const { getLiquidEcoData } = require('./holders')
 const { Fetcher, ChainId, Route, WETH, Trade, TokenAmount, TradeType, Token } = require('@uniswap/sdk');
-const { ONE_TOKEN_18, PROVIDER, AXION, USDT, COINGECKO_VOLUME_INFO_ENDPOINT, CONTRACTS, BLOXY_TOKEN_INFO_ENDPOINT, web3 } = require('../config');
+const { ONE_TOKEN_18, PROVIDER, AXION, USDT, COINGECKO_TOKEN_INFO_ENDPOINT, CONTRACTS, BLOXY_TOKEN_INFO_ENDPOINT, web3 } = require('../config');
 
 // METHODS
 let usdtPrice = null;
@@ -61,20 +61,31 @@ const getAxnPerEth = () => {
     })
 }
 
+const getUsdtPerAxnCoingecko = () => {
+     return new Promise(async (resolve, reject) => {
+        try {
+            const RES = await fetch(COINGECKO_TOKEN_INFO_ENDPOINT);
+            const RES_JSON = await RES.json();
+            resolve(RES_JSON.market_data.current_price.usd)
+        } catch (err) { reject(err) }
+    })
+}
+
 const getUsdtPerAxn = () => {
     return new Promise(async (resolve, reject) => {
         try {
-            let AXIONwETHPair = await Fetcher.fetchPairData(AXION, WETH[ChainId.MAINNET], PROVIDER)
-            let wETHUSDTPair = await Fetcher.fetchPairData(WETH[ChainId.MAINNET], USDT, PROVIDER)
+            // let AXIONwETHPair = await Fetcher.fetchPairData(AXION, WETH[ChainId.MAINNET], PROVIDER)
+            // let wETHUSDTPair = await Fetcher.fetchPairData(WETH[ChainId.MAINNET], USDT, PROVIDER)
 
-            const TRADE = new Trade(
-                new Route([AXIONwETHPair, wETHUSDTPair], AXION),
-                new TokenAmount(AXION, `${ONE_TOKEN_18}00`),
-                TradeType.EXACT_INPUT
-            )
+            // const TRADE = new Trade(
+            //     new Route([AXIONwETHPair, wETHUSDTPair], AXION),
+            //     new TokenAmount(AXION, `${ONE_TOKEN_18}00`),
+            //     TradeType.EXACT_INPUT
+            // )
 
-            usdtPrice = TRADE.executionPrice.toSignificant(6);
-            resolve({usdt: TRADE.executionPrice.toSignificant(6)})
+            // usdtPrice = TRADE.executionPrice.toSignificant(6);
+            usdtPrice = await getUsdtPerAxnCoingecko();
+            resolve({usdt: usdtPrice})
         } catch (err) { reject(err) }
     })
 }
@@ -109,7 +120,7 @@ const getTotalSupply = async () => {
 
 const getVolume = () => {
     return new Promise((resolve, reject) => {
-        fetch(COINGECKO_VOLUME_INFO_ENDPOINT).then(result => {
+        fetch(COINGECKO_TOKEN_INFO_ENDPOINT).then(result => {
             result.json().then(res => {
                 resolve({ 
                     usd: res.market_data.total_volume.usd, 
