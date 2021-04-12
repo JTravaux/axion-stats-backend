@@ -134,20 +134,24 @@ holder_router.get('/fixed-supply', async (req, res) => {
 
 let ethPriceCache;
 holder_router.get('/eth-usd', async (req, res) => {
-    try {
-        if (!ethPriceCache) {
-            ethPriceCache = await getEthUsdPrice();
+    if(req.headers.host.includes("axioncalc")) {
+        res.status(200).send({ ethPrice: 100 })
+    } else {
+        try {
+            if (!ethPriceCache) {
+                ethPriceCache = await getEthUsdPrice();
 
-            setInterval(() => {
-                getEthUsdPrice().then(res => { ethPriceCache = res })
-            }, AUTO_UPDATING_TIME)
+                setInterval(() => {
+                    getEthUsdPrice().then(res => { ethPriceCache = res })
+                }, AUTO_UPDATING_TIME)
 
-            res.status(200).send(ethPriceCache)
-        } else
-            res.status(200).send(ethPriceCache)
-    } catch (err) {
-        console.log(err)
-        res.sendStatus(500);
+                res.status(200).send(ethPriceCache)
+            } else
+                res.status(200).send(ethPriceCache)
+        } catch (err) {
+            console.log(err)
+            res.sendStatus(500);
+        }
     }
 })
 
