@@ -134,7 +134,7 @@ holder_router.get('/fixed-supply', async (req, res) => {
 
 let ethPriceCache;
 holder_router.get('/eth-usd', async (req, res) => {
-    if(req.headers.host.includes("axioncalc")) {
+    if(req.hostname.includes("axioncalc")) {
         res.status(200).send({ ethPrice: 100 })
     } else {
         try {
