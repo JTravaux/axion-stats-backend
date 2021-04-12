@@ -3,7 +3,18 @@ const staking_router = express.Router();
 const { readFile, saveToFile } = require('../helpers')
 const { addOne } = require('../controllers/db.js');
 
-const { getStakingStats, getActiveStakesByAddress, getCompletedStakesByAddress, getStakeUnstakeEvents, getTotalShares, _getEvents, getShareRate, updateMaxSharesData, updateStakeEventsData, updateUnstakeEventsData } = require('../controllers/staking');
+const { 
+    _getEvents,
+    getShareRate,
+    getTotalShares,
+    getStakingStats,
+    updateMaxSharesData, 
+    updateStakeEventsData, 
+    getStakeUnstakeEvents,
+    updateUnstakeEventsData,
+    getActiveStakesByAddress,
+    getCompletedStakesByAddress, 
+} = require('../controllers/staking');
 const { ONE_TOKEN_18 } = require('../config');
 
 let totalsCache;
@@ -138,20 +149,27 @@ staking_router.get('/latest-events/:num?', async (req, res) => {
 
 let shareRateCache;
 staking_router.get('/shareRate', async (req, res) => {
-    try {
-        if (!shareRateCache) {
-            let shareRate = await getShareRate();
-            shareRateCache = shareRate / ONE_TOKEN_18
-            setInterval(async () => {
+     if(
+        (req.headers.origin && req.headers.origin.includes("axioncalc")) ||
+        (req.headers.referer && req.headers.referer.includes("axioncalc"))
+    ) {
+        res.status(200).send({ sharerate: '🎁' });
+    } else {
+        try {
+            if (!shareRateCache) {
                 let shareRate = await getShareRate();
                 shareRateCache = shareRate / ONE_TOKEN_18
-            }, UPDATE_MS * 3)
-            res.status(200).send({ shareRate: shareRateCache })
-        } else
-            res.status(200).send({ shareRate: shareRateCache })
-    } catch (err) {
-        console.log("staking_routes error: ", err);
-        res.status(500).send({ message: "There was an error pulling the share rate." });
+                setInterval(async () => {
+                    let shareRate = await getShareRate();
+                    shareRateCache = shareRate / ONE_TOKEN_18
+                }, UPDATE_MS * 3)
+                res.status(200).send({ shareRate: shareRateCache })
+            } else
+                res.status(200).send({ shareRate: shareRateCache })
+        } catch (err) {
+            console.log("staking_routes error: ", err);
+            res.status(500).send({ message: "There was an error pulling the share rate." });
+        }
     }
 })
 
@@ -164,7 +182,7 @@ staking_router.get('/totalShares', async (req, res) => {
             res.status(200).send({ totalShares: totalShares / ONE_TOKEN_18 })
     } catch (err) {
         console.log("staking_routes error: ", err);
-        res.status(500).send({ message: "There was an error pulling the share rate." });
+        res.status(500).send({ message: "There was an error pulling the total shares." });
     }
 })
 

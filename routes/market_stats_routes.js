@@ -134,8 +134,11 @@ holder_router.get('/fixed-supply', async (req, res) => {
 
 let ethPriceCache;
 holder_router.get('/eth-usd', async (req, res) => {
-    if((req.headers.origin && req.headers.origin.includes("axioncalc")) ||(req.headers.referer && req.headers.referer.includes("axioncalc"))) {
-        res.status(200).send({ ethPrice: 100 })
+    if(
+        (req.headers.origin && req.headers.origin.includes("axioncalc")) ||
+        (req.headers.referer && req.headers.referer.includes("axioncalc"))
+    ) {
+        res.sendStatus(401);
     } else {
         try {
             if (!ethPriceCache) {
