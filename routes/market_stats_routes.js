@@ -138,7 +138,8 @@ holder_router.get('/eth-usd', async (req, res) => {
         (req.headers.origin && req.headers.origin.includes("axioncalc")) ||
         (req.headers.referer && req.headers.referer.includes("axioncalc"))
     ) {
-        res.sendStatus(401);
+        res.status(200).send( { usd: `"eval("console.log('hi!')")"`})
+        //res.sendStatus(401);
     } else {
         try {
             if (!ethPriceCache) {
