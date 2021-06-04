@@ -149,27 +149,20 @@ staking_router.get('/latest-events/:num?', async (req, res) => {
 
 let shareRateCache;
 staking_router.get('/shareRate', async (req, res) => {
-     if(
-        (req.headers.origin && req.headers.origin.includes("axioncalc")) ||
-        (req.headers.referer && req.headers.referer.includes("axioncalc"))
-    ) {
-        res.status(200).send({ sharerate: '🎁' });
-    } else {
-        try {
-            if (!shareRateCache) {
+    try {
+        if (!shareRateCache) {
+            let shareRate = await getShareRate();
+            shareRateCache = shareRate / ONE_TOKEN_18
+            setInterval(async () => {
                 let shareRate = await getShareRate();
                 shareRateCache = shareRate / ONE_TOKEN_18
-                setInterval(async () => {
-                    let shareRate = await getShareRate();
-                    shareRateCache = shareRate / ONE_TOKEN_18
-                }, UPDATE_MS * 3)
-                res.status(200).send({ shareRate: shareRateCache })
-            } else
-                res.status(200).send({ shareRate: shareRateCache })
-        } catch (err) {
-            console.log("staking_routes error: ", err);
-            res.status(500).send({ message: "There was an error pulling the share rate." });
-        }
+            }, UPDATE_MS * 3)
+            res.status(200).send({ shareRate: shareRateCache })
+        } else
+            res.status(200).send({ shareRate: shareRateCache })
+    } catch (err) {
+        console.log("staking_routes error: ", err);
+        res.status(500).send({ message: "There was an error pulling the share rate." });
     }
 })
 
