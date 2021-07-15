@@ -19,7 +19,8 @@ const calculateEcosystem = () => {
                 ...LIQUID_DATA.filter(h =>
                     h.balance >= 1 &&
                     h.address_type === "Wallet" &&
-                    h.address !== "0xe8b283b606a212d82036f74f88177375125440f6"
+                    h.address !== "0xe8b283b606a212d82036f74f88177375125440f6" && // Dev Fund
+                    h.address !== "0x59fa1b52a142c4e4d9fc8caffb13375895c4ea19" // Team Payments
                 ).map(l => { return { address: l.address.toUpperCase(), balance: l.balance } })
             ]
 
