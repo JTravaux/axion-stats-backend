@@ -32,57 +32,9 @@ const getEstimatedTrees = () => {
 }
 
 const getAuctions = () => {
-    return new Promise(async (resolve) => {
-        try {
-            // Get previous auctions
-            const AUCTIONS = await readFile(AUCTION_HISTORY_FILE)
-
-            const CURRENT_AUCTION_ID = AUCTIONS[AUCTIONS.length - 2].id;
-            const TOMORROW_AUCTION_ID = AUCTIONS[AUCTIONS.length - 1].id;
-
-            // Get new auctions
-            let promises = [];
-            promises.push(CONTRACTS.auction.methods.reservesOf(CURRENT_AUCTION_ID).call())
-            promises.push(CONTRACTS.auction.methods.reservesOf(TOMORROW_AUCTION_ID).call())
-
-            const NEW_AUCTIONS = await Promise.all(promises);
-            const NEW_AUCTIONS_FORMATTED = NEW_AUCTIONS.map((a, i) => {
-                return {
-                    id: CURRENT_AUCTION_ID + i,
-                    isWeekly: (i + 1) % 7 === 0,
-                    eth: Number(a.eth) / ONE_TOKEN_18,
-                    axn: Number(a.token) / ONE_TOKEN_18,
-                    start: moment.unix(1605337416).add(i, 'days').format("X"),
-                    end: moment.unix(1605337416).add(i + 1, 'days').format("X")
-                }
-            })
-
-            AUCTIONS[AUCTIONS.length - 2] = NEW_AUCTIONS_FORMATTED[0];
-            AUCTIONS[TAUCTIONS.length - 1] = NEW_AUCTIONS_FORMATTED[1];
-
-            saveToFile(AUCTION_HISTORY_FILE, AUCTIONS)
-            resolve(AUCTIONS)
-        } catch (err) {
-            CONTRACTS.auction.methods.lastAuctionEventId().call().then(async (id) => {
-                let promises = [];
-                for (let i = 0; i <= id; ++i)
-                    promises.push(CONTRACTS.auction.methods.reservesOf(i + 1).call())
-
-                const auctions = await Promise.all(promises)
-                const FORMATTED_AUCTIONS = auctions.map((a, i) => {
-                    return {
-                        id: i + 1,
-                        isWeekly: (i + 1) % 7 === 0,
-                        eth: Number(a.eth) / ONE_TOKEN_18,
-                        axn: Number(a.token) / ONE_TOKEN_18,
-                        start: moment.unix(1605337416).add(i, 'days').format("X"),
-                        end: moment.unix(1605337416).add(i + 1, 'days').format("X")
-                    }
-                })
-                saveToFile(AUCTION_HISTORY_FILE, FORMATTED_AUCTIONS)
-                resolve(FORMATTED_AUCTIONS)
-            }).catch(err => reject(err))
-        }
+    return new Promise(async (resolve, reject) => {
+        const AUCTIONS = await readFile(AUCTION_HISTORY_FILE)
+        resolve(AUCTIONS)
     })
 }
 
