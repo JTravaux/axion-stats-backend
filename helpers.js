@@ -11,34 +11,42 @@ const calculateEcosystemLevels = data => {
         shrimp: {
             count: 0,
             totalAxn: 0,
+            addresses: []
         },
         crab: {
             count: 0,
             totalAxn: 0,
+            addresses: []
         },
         fish: {
             count: 0,
             totalAxn: 0,
+            addresses: []
         },
         octopus: {
             count: 0,
             totalAxn: 0,
+            addresses: []
         },
         dolphin: {
             count: 0,
             totalAxn: 0,
+            addresses: []
         },
         tigerShark: {
             count: 0,
             totalAxn: 0,
+            addresses: []
         },
         greatWhite: {
             count: 0,
             totalAxn: 0,
+            addresses: []
         },
         whale: {
             count: 0,
             totalAxn: 0,
+            addresses: []
         }
     }
 
@@ -52,42 +60,50 @@ const calculateEcosystemLevels = data => {
         if (BALANCE >= 1 && BALANCE <= 999) {
             results["shrimp"].count++;
             results.totals.held_axn += BALANCE;
-            results["shrimp"].totalAxn += BALANCE;            
+            results["shrimp"].totalAxn += BALANCE;
+            results["shrimp"].addresses.push(ADDRESS);
         }
         else if (BALANCE >= 1000 && BALANCE <= 999999) {            
             results["crab"].count++;
             results.totals.held_axn += BALANCE;
             results["crab"].totalAxn += BALANCE;
+            results["crab"].addresses.push(ADDRESS);
         }
         else if (BALANCE >= 1000000 && BALANCE <= 9999999) {            
             results["fish"].count++;
             results.totals.held_axn += BALANCE;
             results["fish"].totalAxn += BALANCE;
+            results["fish"].addresses.push(ADDRESS);
         }
         else if (BALANCE >= 10000000 && BALANCE <= 49999999) {            
             results["octopus"].count++;
             results.totals.held_axn += BALANCE;
             results["octopus"].totalAxn += BALANCE;
+            results["octopus"].addresses.push(ADDRESS);
         }
         else if (BALANCE >= 50000000 && BALANCE <= 99999999) {            
             results["dolphin"].count++;
             results.totals.held_axn += BALANCE;
             results["dolphin"].totalAxn += BALANCE;
+            results["dolphin"].addresses.push(ADDRESS);
         }
         else if (BALANCE >= 100000000 && BALANCE <= 499999999) {            
             results["tigerShark"].count++;
             results.totals.held_axn += BALANCE;
             results["tigerShark"].totalAxn += BALANCE;
+            results["tigerShark"].addresses.push(ADDRESS);
         }
         else if (BALANCE >= 500000000 && BALANCE <= 999999999) {            
             results["greatWhite"].count++;
             results.totals.held_axn += BALANCE;
             results["greatWhite"].totalAxn += BALANCE;
+            results["greatWhite"].addresses.push(ADDRESS);
         }
         else if (BALANCE >= 1000000000) {
             results["whale"].count++;
             results.totals.held_axn += BALANCE;
             results["whale"].totalAxn += BALANCE;
+            results["whale"].addresses.push(ADDRESS);
         }
     })
 
