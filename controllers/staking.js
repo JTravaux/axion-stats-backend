@@ -62,6 +62,11 @@ const _getEvents = async (
     step = 10000,
     clean = true,
 ) => {
+
+    if (endBlock === 'latest') {
+        endBlock = await web3.eth.getBlockNumber();
+    }
+
     let fromBlock = startBlock;
     let toBlock = endBlock;
     const between = endBlock - startBlock;

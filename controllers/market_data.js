@@ -112,7 +112,10 @@ const getTotalSupply = async () => {
     return new Promise(async (resolve, reject) => {
         try {
             const supply = await supplyMethod();
-            resolve({ total_supply: supply });
+            CONTRACTS.token.methods.balanceOf("0x000000000000000000000000000000000000dead").call().then(burnt => {
+                const ADJUSTED_SUPPLY = supply - (burnt / 1e18)
+                resolve({ total_supply: ADJUSTED_SUPPLY });
+            })
         }
         catch (err) { reject(err) }
     })
