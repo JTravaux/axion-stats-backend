@@ -2,7 +2,9 @@ const fs = require("fs");
 const { CONTRACTS, ONE_TOKEN_18 , web3 } = require('../config');
 const { uniqueify, readFile, saveToFile } = require('../helpers');
 
-const CONTRACT_FIRST_BLOCK = 11248075;
+const CONTRACT_FIRST_BLOCK = 20391199;
+const STAKE_EVENT_NAME = 'StakeCreated';
+const UNSTAKE_EVENT_NAME = 'StakeDeleted';
 const STAKE_UPGRADES_FILE = "data/stake_upgrades_raw.json";
 const STAKE_EVENTS_FILE = "data/stake_events_raw.json";
 const UNSTAKE_EVENTS_FILE = "data/unstake_events_raw.json";
@@ -14,58 +16,32 @@ const _saveEvents = (path, events) => {
     });
 }
 
-const _cleanData = (data, type) => {
-
+const _cleanData = (data) => {
     let dat = [...data];
-    if (type === "Stake")
-        dat = dat.filter(d => +d.returnValues.sessionId >= 23439)
-
     return dat.map(d => {
         return {
-            address: d.returnValues.account,
-            stakeNum: +d.returnValues.sessionId,
-            amount: d.returnValues.amount,
-            start: +d.returnValues.start,
-            end: +d.returnValues.end,
-            shares: d.returnValues.shares,
             block: +d.blockNumber,
-            txID: d.transactionHash
-        }
-    })
-}
-
-const _cleanDataV1 = (data, type) => {
-
-    let dat = [...data];
-    if (type === "Stake")
-        dat = dat.filter(d => +d.returnValues.sessionId <= 23438)
-
-    return dat.map(d => {
-        return {
-            address: d.returnValues.account,
-            stakeNum: +d.returnValues.sessionId,
-            amount: d.returnValues.amount,
+            txID: d.transactionHash,
             start: +d.returnValues.start,
-            end: +d.returnValues.end,
-            shares: d.returnValues.shares,
-            block: +d.blockNumber,
-            txID: d.transactionHash
+            shares: d.returnValues.shares * 1e12,
+            amount: d.returnValues.amount * 1e12,
+            address: d.returnValues.account,
+            days: +d.returnValues.stakingDays,
+            stakeNum: +d.returnValues.sessionId,
+            end: +d.returnValues.start + (+d.returnValues.stakingDays * 86400),
         }
     })
 }
 
 const _getEvents = async (
-    type = 'Stake',
+    type = STAKE_EVENT_NAME,
     contract = "staking",
-    startBlock = 11472615, // v2 start
+    startBlock = CONTRACT_FIRST_BLOCK,
     endBlock = "latest",
-    step = 10000,
+    step = 1000,
     clean = true,
 ) => {
-
-    if (endBlock === 'latest') {
-        endBlock = await web3.eth.getBlockNumber();
-    }
+    if (endBlock === 'latest') endBlock = await web3.eth.getBlockNumber();
 
     let fromBlock = startBlock;
     let toBlock = endBlock;
@@ -79,31 +55,23 @@ const _getEvents = async (
     let events = [];
     while (toBlock <= endBlock) {
         try {
-            console.log(fromBlock, toBlock)
+            // console.log(fromBlock, toBlock)
 
             const queriedEvents = await CONTRACTS[contract].getPastEvents(type, { fromBlock, toBlock });
-
             events = [...events, ...queriedEvents];
-
             fromBlock = toBlock + 1;
             toBlock = fromBlock + step;
 
-            if (toBlock > endBlock && fromBlock < endBlock) {
-                toBlock = endBlock;
-            }
+            if (toBlock > endBlock && fromBlock < endBlock) toBlock = endBlock;
         } catch (error) {
             console.log(error);
         }
     }
 
-    let cleaned;
-    if (clean) {
-        if (contract === "staking_v1")
-            cleaned = _cleanDataV1(events, type);
-        else
-            cleaned = _cleanData(events, type);
-    } else
-        cleaned = events
+    console.log("Loop End")
+
+    let cleaned = events;
+    if (clean) cleaned = _cleanData(events);
 
     return cleaned;
 };
@@ -171,15 +139,13 @@ const _calculateStakingStats = async () => {
     let lastSavedStakeEventBlock = CONTRACT_FIRST_BLOCK;
     let lastSavedUnstakeEventBlock = CONTRACT_FIRST_BLOCK;
 
-    if(SAVED_EVENTS[0].length > 0)
-        lastSavedStakeEventBlock = SAVED_EVENTS[0][0].block;
-    if (SAVED_EVENTS[1].length > 0)
-        lastSavedUnstakeEventBlock = SAVED_EVENTS[1][0].block;
+    if (SAVED_EVENTS[0].length > 0) lastSavedStakeEventBlock = SAVED_EVENTS[0][0].block;
+    if (SAVED_EVENTS[1].length > 0) lastSavedUnstakeEventBlock = SAVED_EVENTS[1][0].block;
 
     // Get updated stakes & unstakes from last saved block
     const NEW_EVENTS = await Promise.all([
-        _getEvents("Stake", "staking", lastSavedStakeEventBlock + 1, 'latest'), 
-        _getEvents("Unstake", "staking", lastSavedUnstakeEventBlock + 1, 'latest') 
+        _getEvents(STAKE_EVENT_NAME, "staking", lastSavedStakeEventBlock + 1, 'latest'), 
+        _getEvents(UNSTAKE_EVENT_NAME, "staking", lastSavedUnstakeEventBlock + 1, 'latest') 
     ])
 
     const ALL_STAKE_EVENTS = uniqueify([...SAVED_EVENTS[0], ...NEW_EVENTS[0]]);
@@ -190,12 +156,15 @@ const _calculateStakingStats = async () => {
 
     // Return the results
     let results = _processEvents(ALL_STAKE_EVENTS, ALL_UNSTAKE_EVENTS);
-    results["block"] = Math.max(lastSavedStakeEventBlock+1, lastSavedUnstakeEventBlock+1);
+    results["block"] = Math.max(lastSavedStakeEventBlock + 1, lastSavedUnstakeEventBlock + 1);
     results["timestamp"] = Date.now();
 
     // Get total staked
     const totalStakedAmount = await getTotalStaked();
-    results["total_axn_staked"] = totalStakedAmount / ONE_TOKEN_18
+    results["total_axn_staked"] = totalStakedAmount / 1e6
+
+    const totalShareAmount = await getTotalShares();
+    results["total_active_shares"] = totalShareAmount / 1e6
 
     return results;
 }
@@ -217,10 +186,8 @@ const getActiveStakesByAddress = async () => {
             const UNSTAKE_EVENTS = await readFile(UNSTAKE_EVENTS_FILE);
 
             STAKE_EVENTS.filter(s => !UNSTAKE_EVENTS.find(u => +u.stakeNum === +s.stakeNum)).forEach(e => {
-                if (!unique_addresses[e.address])
-                    unique_addresses[e.address] = [e]
-                else
-                    unique_addresses[e.address].push(e)
+                if (!unique_addresses[e.address]) unique_addresses[e.address] = [e]
+                else unique_addresses[e.address].push(e)
             })
 
             resolve(unique_addresses);
@@ -277,7 +244,7 @@ const updateMaxSharesData = async () => {
         maxSharesStartBlock = CURRENT_STAKE_UPGRADES_EVENTS[0].blockNumber;
 
     // Get new events
-    const NEW_MAX_SHARES_EVENTS = await _getEvents("MaxShareUpgrade", "staking", maxSharesStartBlock + 1, 'latest', 10000, false);
+    const NEW_MAX_SHARES_EVENTS = await _getEvents("StakeUpgraded", "staking", maxSharesStartBlock + 1, 'latest', 10000, false);
     const uniqueConcat = uniqueify(CURRENT_STAKE_UPGRADES_EVENTS.concat(NEW_MAX_SHARES_EVENTS))
     const sortedUpgradeEvents = uniqueConcat.sort((a, b) => b.blockNumber - a.blockNumber);
     await saveToFile(STAKE_UPGRADES_FILE, sortedUpgradeEvents)
@@ -299,28 +266,34 @@ const updateMaxSharesData = async () => {
     return NEW_MAX_SHARES_EVENTS;
 }
 
-
-const V1_START_BLOCK = 11248075;
-const V1_END_BLOCK = 11472614;
 const updateStakeEventsData = async () => {
-    const stakes_v1 = await _getEvents("Stake", "staking_v1", V1_START_BLOCK, V1_END_BLOCK)
-    const stakes_v2 = await _getEvents("Stake")
-    STAKE_EVENTS = stakes_v1.concat(stakes_v2).sort((a, b) => +b.block - +a.block);
+    const stakes_v2 = await _getEvents(STAKE_EVENT_NAME)
+    STAKE_EVENTS = stakes_v2.sort((a, b) => +b.block - +a.block);
     await saveToFile(STAKE_EVENTS_FILE, STAKE_EVENTS)
     return STAKE_EVENTS;
 }
 
 const updateUnstakeEventsData = async () => {
-    const unstakes_v1 = await _getEvents("Unstake", "staking_v1", V1_START_BLOCK, V1_END_BLOCK)
-    const unstakes_v2 = await _getEvents("Unstake")
-    UNSTAKE_EVENTS = unstakes_v1.concat(unstakes_v2).sort((a, b) => +b.block - +a.block);
+    const unstakes_v2 = await _getEvents(UNSTAKE_EVENT_NAME)
+    UNSTAKE_EVENTS = unstakes_v2.sort((a, b) => +b.block - +a.block);
     await saveToFile(UNSTAKE_EVENTS_FILE, UNSTAKE_EVENTS)
     return UNSTAKE_EVENTS;
 }
 
-const getTotalShares = () => CONTRACTS.staking.methods.sharesTotalSupply().call();
-const getTotalStaked = () => CONTRACTS.staking.methods.totalStakedAmount().call();
-const getShareRate = () => CONTRACTS.staking.methods.shareRate().call();
+const getTotalShares = async () => {
+    const stats = await CONTRACTS.staking.methods.getStatFields().call();
+    return stats.sharesTotalSupply;
+};
+
+const getTotalStaked = async () => {
+    const stats = await CONTRACTS.staking.methods.getStatFields().call();
+    return stats.totalStakedAmount;
+};
+
+const getShareRate = async () => {
+    const stats = await CONTRACTS.staking.methods.getInterestFields().call();
+    return stats.shareRate;
+};
 
 module.exports = {
     _getEvents,

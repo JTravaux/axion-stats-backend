@@ -15,68 +15,19 @@
                 "type": "uint256"
             },
             {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "sharePayout",
+                "type": "uint256"
+            },
+            {
                 "indexed": true,
                 "internalType": "uint256",
                 "name": "time",
                 "type": "uint256"
             }
         ],
-        "name": "MakePayout",
-        "type": "event"
-    },
-    {
-        "anonymous": false,
-        "inputs": [
-            {
-                "indexed": true,
-                "internalType": "address",
-                "name": "account",
-                "type": "address"
-            },
-            {
-                "indexed": true,
-                "internalType": "uint256",
-                "name": "sessionId",
-                "type": "uint256"
-            },
-            {
-                "indexed": false,
-                "internalType": "uint256",
-                "name": "amount",
-                "type": "uint256"
-            },
-            {
-                "indexed": false,
-                "internalType": "uint256",
-                "name": "newAmount",
-                "type": "uint256"
-            },
-            {
-                "indexed": false,
-                "internalType": "uint256",
-                "name": "shares",
-                "type": "uint256"
-            },
-            {
-                "indexed": false,
-                "internalType": "uint256",
-                "name": "newShares",
-                "type": "uint256"
-            },
-            {
-                "indexed": false,
-                "internalType": "uint256",
-                "name": "start",
-                "type": "uint256"
-            },
-            {
-                "indexed": false,
-                "internalType": "uint256",
-                "name": "end",
-                "type": "uint256"
-            }
-        ],
-        "name": "MaxShareUpgrade",
+        "name": "DailyInterestAdded",
         "type": "event"
     },
     {
@@ -158,6 +109,19 @@
         "anonymous": false,
         "inputs": [
             {
+                "indexed": false,
+                "internalType": "bool",
+                "name": "paused",
+                "type": "bool"
+            }
+        ],
+        "name": "SetPaused",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
                 "indexed": true,
                 "internalType": "address",
                 "name": "account",
@@ -165,36 +129,85 @@
             },
             {
                 "indexed": true,
-                "internalType": "uint256",
+                "internalType": "uint128",
                 "name": "sessionId",
-                "type": "uint256"
+                "type": "uint128"
             },
             {
                 "indexed": false,
-                "internalType": "uint256",
+                "internalType": "uint80",
                 "name": "amount",
-                "type": "uint256"
+                "type": "uint80"
             },
             {
                 "indexed": false,
-                "internalType": "uint256",
+                "internalType": "uint80",
+                "name": "shares",
+                "type": "uint80"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint40",
                 "name": "start",
-                "type": "uint256"
+                "type": "uint40"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint16",
+                "name": "stakingDays",
+                "type": "uint16"
+            }
+        ],
+        "name": "StakeCreated",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": true,
+                "internalType": "address",
+                "name": "account",
+                "type": "address"
+            },
+            {
+                "indexed": true,
+                "internalType": "uint128",
+                "name": "sessionId",
+                "type": "uint128"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint80",
+                "name": "amount",
+                "type": "uint80"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint80",
+                "name": "shares",
+                "type": "uint80"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint40",
+                "name": "start",
+                "type": "uint40"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint16",
+                "name": "stakingDays",
+                "type": "uint16"
             },
             {
                 "indexed": false,
                 "internalType": "uint256",
                 "name": "end",
                 "type": "uint256"
-            },
-            {
-                "indexed": false,
-                "internalType": "uint256",
-                "name": "shares",
-                "type": "uint256"
             }
         ],
-        "name": "Stake",
+        "name": "StakeDeleted",
         "type": "event"
     },
     {
@@ -221,6 +234,24 @@
             {
                 "indexed": false,
                 "internalType": "uint256",
+                "name": "newAmount",
+                "type": "uint256"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "shares",
+                "type": "uint256"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "newShares",
+                "type": "uint256"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint256",
                 "name": "start",
                 "type": "uint256"
             },
@@ -229,15 +260,9 @@
                 "internalType": "uint256",
                 "name": "end",
                 "type": "uint256"
-            },
-            {
-                "indexed": false,
-                "internalType": "uint256",
-                "name": "shares",
-                "type": "uint256"
             }
         ],
-        "name": "Unstake",
+        "name": "StakeUpgraded",
         "type": "event"
     },
     {
@@ -255,7 +280,7 @@
     },
     {
         "inputs": [],
-        "name": "EXTERNAL_STAKER_ROLE",
+        "name": "EXTERNAL_CALLER_ROLE",
         "outputs": [
             {
                 "internalType": "bytes32",
@@ -280,13 +305,19 @@
         "type": "function"
     },
     {
-        "inputs": [],
-        "name": "MIGRATOR_ROLE",
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "name": "_whitelist",
         "outputs": [
             {
-                "internalType": "bytes32",
+                "internalType": "bool",
                 "name": "",
-                "type": "bytes32"
+                "type": "bool"
             }
         ],
         "stateMutability": "view",
@@ -294,84 +325,18 @@
     },
     {
         "inputs": [],
-        "name": "addresses",
-        "outputs": [
-            {
-                "internalType": "address",
-                "name": "mainToken",
-                "type": "address"
-            },
-            {
-                "internalType": "address",
-                "name": "auction",
-                "type": "address"
-            },
-            {
-                "internalType": "address",
-                "name": "subBalances",
-                "type": "address"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [],
-        "name": "basePeriod",
-        "outputs": [
-            {
-                "internalType": "uint256",
-                "name": "",
-                "type": "uint256"
-            }
-        ],
-        "stateMutability": "view",
+        "name": "addDailyInterest",
+        "outputs": [],
+        "stateMutability": "nonpayable",
         "type": "function"
     },
     {
         "inputs": [
             {
-                "internalType": "uint256",
-                "name": "firstPayout",
-                "type": "uint256"
+                "internalType": "address",
+                "name": "staker",
+                "type": "address"
             },
-            {
-                "internalType": "uint256",
-                "name": "lastPayout",
-                "type": "uint256"
-            },
-            {
-                "internalType": "uint256",
-                "name": "shares",
-                "type": "uint256"
-            }
-        ],
-        "name": "calculateStakingInterest",
-        "outputs": [
-            {
-                "internalType": "uint256",
-                "name": "",
-                "type": "uint256"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [],
-        "name": "calculateStepsFromStart",
-        "outputs": [
-            {
-                "internalType": "uint256",
-                "name": "",
-                "type": "uint256"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [
             {
                 "internalType": "uint256",
                 "name": "amount",
@@ -381,48 +346,23 @@
                 "internalType": "uint256",
                 "name": "stakingDays",
                 "type": "uint256"
-            },
-            {
-                "internalType": "address",
-                "name": "staker",
-                "type": "address"
             }
         ],
-        "name": "externalStake",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "uint256",
-                "name": "amount",
-                "type": "uint256"
-            },
-            {
-                "internalType": "uint256",
-                "name": "start",
-                "type": "uint256"
-            },
-            {
-                "internalType": "uint256",
-                "name": "end",
-                "type": "uint256"
-            },
-            {
-                "internalType": "uint256",
-                "name": "stakingInterest",
-                "type": "uint256"
-            }
-        ],
-        "name": "getAmountOutAndPenalty",
+        "name": "createStake",
         "outputs": [
             {
                 "internalType": "uint256",
                 "name": "",
                 "type": "uint256"
-            },
+            }
+        ],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "getAPR",
+        "outputs": [
             {
                 "internalType": "uint256",
                 "name": "",
@@ -434,7 +374,50 @@
     },
     {
         "inputs": [],
-        "name": "getMaxShareEventActive",
+        "name": "getDaysFromStart",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "getInterestFields",
+        "outputs": [
+            {
+                "components": [
+                    {
+                        "internalType": "uint256",
+                        "name": "APR",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint128",
+                        "name": "shareRate",
+                        "type": "uint128"
+                    },
+                    {
+                        "internalType": "uint128",
+                        "name": "nextAddInterestTimestamp",
+                        "type": "uint128"
+                    }
+                ],
+                "internalType": "struct StakeBase.InterestFields",
+                "name": "",
+                "type": "tuple"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "getPaused",
         "outputs": [
             {
                 "internalType": "bool",
@@ -465,24 +448,135 @@
         "type": "function"
     },
     {
+        "inputs": [],
+        "name": "getSettings",
+        "outputs": [
+            {
+                "components": [
+                    {
+                        "internalType": "uint128",
+                        "name": "shareRateScalingFactor",
+                        "type": "uint128"
+                    },
+                    {
+                        "internalType": "uint32",
+                        "name": "secondsInDay",
+                        "type": "uint32"
+                    },
+                    {
+                        "internalType": "uint64",
+                        "name": "contractStartTimestamp",
+                        "type": "uint64"
+                    },
+                    {
+                        "internalType": "uint32",
+                        "name": "bpdDayRange",
+                        "type": "uint32"
+                    }
+                ],
+                "internalType": "struct StakeBase.Settings",
+                "name": "",
+                "type": "tuple"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
         "inputs": [
             {
-                "internalType": "bytes32",
-                "name": "role",
-                "type": "bytes32"
+                "internalType": "uint256",
+                "name": "id",
+                "type": "uint256"
+            }
+        ],
+        "name": "getStake",
+        "outputs": [
+            {
+                "components": [
+                    {
+                        "internalType": "uint256",
+                        "name": "amount",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "shares",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "start",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "stakingDays",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "firstInterestDay",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "payout",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "enum StakeStatus",
+                        "name": "status",
+                        "type": "uint8"
+                    },
+                    {
+                        "internalType": "string",
+                        "name": "name",
+                        "type": "string"
+                    }
+                ],
+                "internalType": "struct StakeData1e18",
+                "name": "",
+                "type": "tuple"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "uint256",
+                "name": "stakeId",
+                "type": "uint256"
+            }
+        ],
+        "name": "getStakeAndInterestById",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "start",
+                "type": "uint256"
             },
             {
                 "internalType": "uint256",
-                "name": "index",
+                "name": "stakingDays",
                 "type": "uint256"
-            }
-        ],
-        "name": "getRoleMember",
-        "outputs": [
+            },
             {
-                "internalType": "address",
-                "name": "",
-                "type": "address"
+                "internalType": "uint256",
+                "name": "amount",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "shares",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "interest",
+                "type": "uint256"
             }
         ],
         "stateMutability": "view",
@@ -491,12 +585,154 @@
     {
         "inputs": [
             {
-                "internalType": "bytes32",
-                "name": "role",
-                "type": "bytes32"
+                "internalType": "uint256",
+                "name": "id",
+                "type": "uint256"
             }
         ],
-        "name": "getRoleMemberCount",
+        "name": "getStakeEnd",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "uint256",
+                "name": "firstInterestDay",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "stakingDays",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "shares",
+                "type": "uint256"
+            }
+        ],
+        "name": "getStakeInterest",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "uint256",
+                "name": "id",
+                "type": "uint256"
+            }
+        ],
+        "name": "getStakeShares",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "uint256",
+                "name": "id",
+                "type": "uint256"
+            }
+        ],
+        "name": "getStakeUri",
+        "outputs": [
+            {
+                "components": [
+                    {
+                        "internalType": "string",
+                        "name": "name",
+                        "type": "string"
+                    },
+                    {
+                        "internalType": "uint64",
+                        "name": "amount",
+                        "type": "uint64"
+                    },
+                    {
+                        "internalType": "uint64",
+                        "name": "shares",
+                        "type": "uint64"
+                    },
+                    {
+                        "internalType": "uint16",
+                        "name": "stakingDays",
+                        "type": "uint16"
+                    },
+                    {
+                        "internalType": "uint40",
+                        "name": "payout",
+                        "type": "uint40"
+                    },
+                    {
+                        "internalType": "enum StakeStatus",
+                        "name": "status",
+                        "type": "uint8"
+                    }
+                ],
+                "internalType": "struct StakeUri",
+                "name": "",
+                "type": "tuple"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "uint256",
+                "name": "id",
+                "type": "uint256"
+            }
+        ],
+        "name": "getStakeWithdrawnOrExists",
+        "outputs": [
+            {
+                "internalType": "bool",
+                "name": "",
+                "type": "bool"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "uint256",
+                "name": "amount",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "stakingDays",
+                "type": "uint256"
+            }
+        ],
+        "name": "getStakersSharesAmount",
         "outputs": [
             {
                 "internalType": "uint256",
@@ -509,12 +745,34 @@
     },
     {
         "inputs": [],
-        "name": "globalPayin",
+        "name": "getStatFields",
         "outputs": [
             {
-                "internalType": "uint256",
+                "components": [
+                    {
+                        "internalType": "uint72",
+                        "name": "totalStakedAmount",
+                        "type": "uint72"
+                    },
+                    {
+                        "internalType": "uint72",
+                        "name": "sharesTotalSupply",
+                        "type": "uint72"
+                    },
+                    {
+                        "internalType": "uint72",
+                        "name": "_gap",
+                        "type": "uint72"
+                    },
+                    {
+                        "internalType": "uint40",
+                        "name": "lastStakeId",
+                        "type": "uint40"
+                    }
+                ],
+                "internalType": "struct StakeBase.StatFields",
                 "name": "",
-                "type": "uint256"
+                "type": "tuple"
             }
         ],
         "stateMutability": "view",
@@ -522,7 +780,7 @@
     },
     {
         "inputs": [],
-        "name": "globalPayout",
+        "name": "getTotalShares",
         "outputs": [
             {
                 "internalType": "uint256",
@@ -576,8 +834,33 @@
         "type": "function"
     },
     {
-        "inputs": [],
-        "name": "init_",
+        "inputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "name": "interestPerShare",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "account",
+                "type": "address"
+            }
+        ],
+        "name": "isManager",
         "outputs": [
             {
                 "internalType": "bool",
@@ -591,125 +874,17 @@
     {
         "inputs": [
             {
-                "internalType": "address",
-                "name": "_manager",
-                "type": "address"
-            },
-            {
-                "internalType": "address",
-                "name": "_migrator",
-                "type": "address"
-            }
-        ],
-        "name": "initialize",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
-        "inputs": [],
-        "name": "lastSessionId",
-        "outputs": [
-            {
                 "internalType": "uint256",
                 "name": "",
                 "type": "uint256"
             }
         ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [],
-        "name": "lastSessionIdV1",
+        "name": "name",
         "outputs": [
             {
-                "internalType": "uint256",
+                "internalType": "string",
                 "name": "",
-                "type": "uint256"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [],
-        "name": "makePayout",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "uint256",
-                "name": "sessionId",
-                "type": "uint256"
-            }
-        ],
-        "name": "maxShare",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "uint256",
-                "name": "sessionId",
-                "type": "uint256"
-            }
-        ],
-        "name": "maxShareV1",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
-        "inputs": [],
-        "name": "nextPayoutCall",
-        "outputs": [
-            {
-                "internalType": "uint256",
-                "name": "",
-                "type": "uint256"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "uint256",
-                "name": "",
-                "type": "uint256"
-            }
-        ],
-        "name": "payouts",
-        "outputs": [
-            {
-                "internalType": "uint256",
-                "name": "payout",
-                "type": "uint256"
-            },
-            {
-                "internalType": "uint256",
-                "name": "sharesTotalSupply",
-                "type": "uint256"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [],
-        "name": "readPayout",
-        "outputs": [
-            {
-                "internalType": "uint256",
-                "name": "",
-                "type": "uint256"
+                "type": "string"
             }
         ],
         "stateMutability": "view",
@@ -736,52 +911,6 @@
     {
         "inputs": [
             {
-                "internalType": "uint256",
-                "name": "sessionId",
-                "type": "uint256"
-            },
-            {
-                "internalType": "uint256",
-                "name": "stakingDays",
-                "type": "uint256"
-            },
-            {
-                "internalType": "uint256",
-                "name": "topup",
-                "type": "uint256"
-            }
-        ],
-        "name": "restake",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "uint256",
-                "name": "sessionId",
-                "type": "uint256"
-            },
-            {
-                "internalType": "uint256",
-                "name": "stakingDays",
-                "type": "uint256"
-            },
-            {
-                "internalType": "uint256",
-                "name": "topup",
-                "type": "uint256"
-            }
-        ],
-        "name": "restakeV1",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
                 "internalType": "bytes32",
                 "name": "role",
                 "type": "bytes32"
@@ -800,114 +929,12 @@
     {
         "inputs": [
             {
-                "internalType": "address",
-                "name": "",
-                "type": "address"
-            },
-            {
                 "internalType": "uint256",
-                "name": "",
+                "name": "_apr",
                 "type": "uint256"
             }
         ],
-        "name": "sessionDataOf",
-        "outputs": [
-            {
-                "internalType": "uint256",
-                "name": "amount",
-                "type": "uint256"
-            },
-            {
-                "internalType": "uint256",
-                "name": "start",
-                "type": "uint256"
-            },
-            {
-                "internalType": "uint256",
-                "name": "end",
-                "type": "uint256"
-            },
-            {
-                "internalType": "uint256",
-                "name": "shares",
-                "type": "uint256"
-            },
-            {
-                "internalType": "uint256",
-                "name": "firstPayout",
-                "type": "uint256"
-            },
-            {
-                "internalType": "uint256",
-                "name": "lastPayout",
-                "type": "uint256"
-            },
-            {
-                "internalType": "bool",
-                "name": "withdrawn",
-                "type": "bool"
-            },
-            {
-                "internalType": "uint256",
-                "name": "payout",
-                "type": "uint256"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "address",
-                "name": "",
-                "type": "address"
-            },
-            {
-                "internalType": "uint256",
-                "name": "",
-                "type": "uint256"
-            }
-        ],
-        "name": "sessionsOf",
-        "outputs": [
-            {
-                "internalType": "uint256",
-                "name": "",
-                "type": "uint256"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "address",
-                "name": "account",
-                "type": "address"
-            }
-        ],
-        "name": "sessionsOf_",
-        "outputs": [
-            {
-                "internalType": "uint256[]",
-                "name": "",
-                "type": "uint256[]"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "bool",
-                "name": "_active",
-                "type": "bool"
-            }
-        ],
-        "name": "setMaxShareEventActive",
+        "name": "setAPR",
         "outputs": [],
         "stateMutability": "nonpayable",
         "type": "function"
@@ -915,12 +942,48 @@
     {
         "inputs": [
             {
+                "internalType": "bool",
+                "name": "_paused",
+                "type": "bool"
+            }
+        ],
+        "name": "setPaused",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "string",
+                "name": "newName",
+                "type": "string"
+            },
+            {
                 "internalType": "uint256",
-                "name": "_shareRate",
+                "name": "stakeId",
                 "type": "uint256"
             }
         ],
-        "name": "setShareRate",
+        "name": "setStakeName",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "_address",
+                "type": "address"
+            },
+            {
+                "internalType": "bool",
+                "name": "_whitelisted",
+                "type": "bool"
+            }
+        ],
+        "name": "setWhiteListedAddress",
         "outputs": [],
         "stateMutability": "nonpayable",
         "type": "function"
@@ -944,123 +1007,85 @@
         "type": "function"
     },
     {
-        "inputs": [],
-        "name": "shareRate",
-        "outputs": [
-            {
-                "internalType": "uint256",
-                "name": "",
-                "type": "uint256"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [],
-        "name": "sharesTotalSupply",
-        "outputs": [
-            {
-                "internalType": "uint256",
-                "name": "",
-                "type": "uint256"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
         "inputs": [
             {
                 "internalType": "uint256",
-                "name": "amount",
+                "name": "stakeId",
                 "type": "uint256"
             },
             {
                 "internalType": "uint256",
-                "name": "stakingDays",
+                "name": "percentage",
                 "type": "uint256"
             }
         ],
-        "name": "stake",
+        "name": "splitStake",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "bytes4",
+                "name": "interfaceId",
+                "type": "bytes4"
+            }
+        ],
+        "name": "supportsInterface",
+        "outputs": [
+            {
+                "internalType": "bool",
+                "name": "",
+                "type": "bool"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "staker",
+                "type": "address"
+            },
+            {
+                "internalType": "uint256",
+                "name": "id",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "payout",
+                "type": "uint256"
+            }
+        ],
+        "name": "unsetStake",
         "outputs": [],
         "stateMutability": "nonpayable",
         "type": "function"
     },
     {
-        "inputs": [],
-        "name": "stakingV1",
-        "outputs": [
+        "inputs": [
             {
-                "internalType": "contract IStakingV1",
-                "name": "",
+                "internalType": "uint256",
+                "name": "id",
+                "type": "uint256"
+            },
+            {
+                "internalType": "address",
+                "name": "staker",
                 "type": "address"
             }
         ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [],
-        "name": "startContract",
-        "outputs": [
-            {
-                "internalType": "uint256",
-                "name": "",
-                "type": "uint256"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [],
-        "name": "stepTimestamp",
-        "outputs": [
-            {
-                "internalType": "uint256",
-                "name": "",
-                "type": "uint256"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [],
-        "name": "totalStakedAmount",
-        "outputs": [
-            {
-                "internalType": "uint256",
-                "name": "",
-                "type": "uint256"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "uint256",
-                "name": "sessionId",
-                "type": "uint256"
-            }
-        ],
-        "name": "unstake",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "uint256",
-                "name": "sessionId",
-                "type": "uint256"
-            }
-        ],
-        "name": "unstakeV1",
+        "name": "upgradeExistingStake",
         "outputs": [],
         "stateMutability": "nonpayable",
         "type": "function"

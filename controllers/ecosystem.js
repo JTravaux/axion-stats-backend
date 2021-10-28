@@ -53,7 +53,7 @@ const calculateEcosystem = () => {
             }
 
             // Save to DB
-            addOne("ecosystem", {...RESULT, timestamp: Date.now()})
+            // addOne("ecosystem", {...RESULT, timestamp: Date.now()})
             
             resolve(RESULT)
         } catch (err) {

@@ -30,7 +30,7 @@ staking_router.get('/totals', async (req, res) => {
 
             // Get and save results
             totalsCache = await getStakingStats();
-            addOne("staking_stats", totalsCache);
+            // addOne("staking_stats", totalsCache);
             updateMaxSharesData();
 
             // Refresh stats
@@ -40,7 +40,7 @@ staking_router.get('/totals', async (req, res) => {
             }, UPDATE_MS);
 
             // Update DB every 30 mins
-            setInterval(() => { addOne("staking_stats", totalsCache) }, (1000 * 60) * 30);
+            // setInterval(() => { addOne("staking_stats", totalsCache) }, (1000 * 60) * 30);
 
             // Return result
             res.status(200).send(totalsCache)
@@ -97,7 +97,7 @@ staking_router.get('/stakes/active/:addr', async (req, res) => {
         let totals = {
             total_axn: TOTAL_AXN_STAKED,
             total_shares: TOTAL_SHARES_STAKES,
-            global_shares: totalShares / ONE_TOKEN_18
+            global_shares: totalShares / 1e6
         }
 
         res.status(200).send({
@@ -177,99 +177,6 @@ staking_router.get('/totalShares', async (req, res) => {
         console.log("staking_routes error: ", err);
         res.status(500).send({ message: "There was an error pulling the total shares." });
     }
-})
-
-const PASSWORD = "AxionDev79"
-staking_router.get('/refresh', async (req, res) => {
-    const KEY = req.query.key;
-    const TYPE = req.query.type;
-
-    if (!KEY || KEY !== PASSWORD) {
-        res.sendStatus(403);
-        return;
-    }
-    
-    if (!TYPE || (TYPE !== "StakeUnstake" && TYPE !== "MaxShareUpgrade" && TYPE !== "Stake" && TYPE !== "Unstake")) {
-        res.status(500).send("Invalid type. Must be either: StakeUnstake, MaxShareUpgrade, Stake, Unstake");
-        return;
-    }
-
-    try {
-        let result = []
-        if (TYPE === "StakeUnstake") {
-            const stakeEvents = await updateStakeEventsData();
-            const unstakeEvents = await updateUnstakeEventsData();
-            result = stakeEvents.concat(unstakeEvents)
-        }
-        else if (TYPE === "Stake") 
-            result = await updateStakeEventsData();
-        else if (TYPE === "Unstake")
-            result = await updateUnstakeEventsData();
-        else if (TYPE === "MaxShareUpgrade")
-            result = await updateMaxSharesData();
-        res.status(200).send({ status: `Done! Got a total of ${result.length} ${TYPE} new events.` })
-    } catch (err) { res.status(500).send({ status: err.message }) }
-})
-
-staking_router.get('/fetch-total-staked', async (req, res) => {
-    const KEY = req.query.key;
-
-    if (!KEY || KEY !== PASSWORD) {
-        res.sendStatus(403);
-        return;
-    }
-
-    const TYPE = req.query.type || "cached";
-
-    let STAKE_EVENTS;
-    let UNSTAKE_EVENTS;
-    let SORTED_STAKES;
-    let SORTED_UNSTAKES;
-
-    const STAKE_EVENTS_FILE = "data/events_stake.json";
-    const UNSTAKE_EVENTS_FILE = "data/events_unstake.json";
-
-    if(TYPE === "fresh") {
-        ////////////////
-        // FRESH DATA //
-        ///////////////
-        const V1_START_BLOCK = 11248075;
-        const V1_END_BLOCK = 11472614;
-
-        const stakes_v1 = await _getEvents("Stake", "staking_v1", V1_START_BLOCK, V1_END_BLOCK)
-        const stakes_v2 = await _getEvents("Stake")
-        STAKE_EVENTS = stakes_v1.concat(stakes_v2);
-        SORTED_STAKES = STAKE_EVENTS.sort((a, b) => +b.block - +a.block)
-        await saveToFile(STAKE_EVENTS_FILE, SORTED_STAKES)
-
-        const unstakes_v1 = await _getEvents("Unstake", "staking_v1", V1_START_BLOCK, V1_END_BLOCK)
-        const unstakes_v2 = await _getEvents("Unstake")
-        UNSTAKE_EVENTS = unstakes_v1.concat(unstakes_v2);
-        SORTED_UNSTAKES = UNSTAKE_EVENTS.sort((a, b) => +b.block - +a.block)
-        await saveToFile(UNSTAKE_EVENTS_FILE, SORTED_UNSTAKES)
-    } else {
-        ////////////////
-        // FILE DATA //
-        ///////////////
-        STAKE_EVENTS = await readFile(STAKE_EVENTS_FILE)
-        SORTED_STAKES = [...STAKE_EVENTS];
-
-        UNSTAKE_EVENTS = await readFile(UNSTAKE_EVENTS_FILE)
-        SORTED_UNSTAKES = [...UNSTAKE_EVENTS];
-    }
-  
-    // Filter for active stakes
-    const ACTIVE_STAKES = STAKE_EVENTS.filter(se => UNSTAKE_EVENTS.findIndex(ue => +ue.stakeNum === +se.stakeNum) === -1)
-
-    // Build the result
-    const RESULT = {
-        stakes: ACTIVE_STAKES.length,
-        total_staked_bn: ACTIVE_STAKES.reduce((a, b) => a + +b.amount, 0).toLocaleString('fullwide', { useGrouping: false }),
-        total_shares_bn: ACTIVE_STAKES.reduce((a, b) => a + +b.shares, 0).toLocaleString('fullwide', { useGrouping: false }),
-        last_event_block: Math.max(SORTED_STAKES[0].block, SORTED_UNSTAKES[0].block)
-    }
-
-    res.status(200).send(RESULT)
 })
 
 module.exports = staking_router;

@@ -1,25 +1,10 @@
 const fetch = require('node-fetch');
 const { getLiquidEcoData } = require('./holders')
-const { Fetcher, ChainId, Route, WETH, Trade, TokenAmount, TradeType, Token } = require('@uniswap/sdk');
-const { ONE_TOKEN_18, PROVIDER, AXION, USDT, COINGECKO_TOKEN_INFO_ENDPOINT, CONTRACTS, BLOXY_TOKEN_INFO_ENDPOINT, web3 } = require('../config');
+const { Fetcher, ChainId, Route, Trade, TokenAmount, TradeType, Token } = require('@sushiswap/sdk');
+const { ONE_TOKEN_18, PROVIDER, AXION, WETH, COINGECKO_TOKEN_INFO_ENDPOINT, CONTRACTS, web3, DAI_CONTRACT, DAI } = require('../config');
 
 // METHODS
 let usdtPrice = null;
-let supplyAPI = 'bloxy' // or bloxy
-
-const _getUpdateSupplyBloxy = () => {
-    return new Promise(async (res, rej) => {
-        try {
-            const RES = await fetch(BLOXY_TOKEN_INFO_ENDPOINT);
-            const RES_JSON = await RES.json();
-            res(RES_JSON[0].circulating_supply)
-        } catch (err) { 
-            supplyAPI = "etherscan"
-            setTimeout(() => { supplyAPI = "bloxy" }, 1000 * (60 * 5))
-            rej(err) 
-        }
-    })
-}
 
 const _getUpdateSupplyEtherscan = () => {
     return new Promise((res, rej) => {
@@ -27,8 +12,6 @@ const _getUpdateSupplyEtherscan = () => {
             const ADJUSTED_SUPPLY = web3.utils.toBN(supply).div(web3.utils.toBN(ONE_TOKEN_18)).toNumber();
             res(ADJUSTED_SUPPLY)
         }).catch(err => {
-            supplyAPI = "bloxy"
-            setTimeout(() => { supplyAPI = "etherscan" }, 1000 * (60 * 30))
             rej(err)
         })
     })
@@ -37,11 +20,13 @@ const _getUpdateSupplyEtherscan = () => {
 const getEthUsdPrice = () => {
     return new Promise(async (resolve, reject) => {
         try {
-            const DAI = new Token(ChainId.MAINNET, '0x6B175474E89094C44Da98b954EedeAC495271d0F', 18)
-            const pair = await Fetcher.fetchPairData(DAI, WETH[DAI.chainId])
-            const route = new Route([pair], WETH[DAI.chainId])
+            resolve({ usd: 0 });
 
-            resolve({ usd: route.midPrice.toSignificant(6) });
+            // console.log("getEthUsdPrice")
+            // const pair = await Fetcher.fetchPairData(DAI, WETH, PROVIDER)
+            // const route = new Route([pair], WETH)
+            // console.log("getEthUsdPrice", route.midPrice.toSignificant(6))
+            // resolve({ usd: route.midPrice.toSignificant(6) });
         } catch (err) { reject(err) }
     })
 }
@@ -49,14 +34,18 @@ const getEthUsdPrice = () => {
 const getAxnPerEth = () => {
     return new Promise(async (resolve, reject) => {
         try {
-            const PAIR = await Fetcher.fetchPairData(WETH[AXION.chainId], AXION, PROVIDER);
-            const TRADE = new Trade(
-                new Route([PAIR], WETH[AXION.chainId]),
-                new TokenAmount(WETH[AXION.chainId], ONE_TOKEN_18),
-                TradeType.EXACT_INPUT
-            )
-            
-            resolve({ axn: TRADE.executionPrice.toSignificant(6) });
+            // console.log("getAxnPerEth")
+            // const PAIR = await Fetcher.fetchPairData(WETH, AXION, PROVIDER);
+            // console.log("getAxnPerEth 1")
+            // const TRADE = new Trade(
+            //     new Route([PAIR], WETH),
+            //     new TokenAmount(WETH, ONE_TOKEN_18),
+            //     TradeType.EXACT_INPUT
+            // )
+            // console.log("getAxnPerEth", TRADE.executionPrice.toSignificant(6))
+            resolve({ axn: 0});
+
+            // resolve({ axn: TRADE.executionPrice.toSignificant(6) });
         } catch (err) { reject(err) }
     })
 }
@@ -108,10 +97,9 @@ const getMarketCap = async () => {
 }
 
 const getTotalSupply = async () => {
-    const supplyMethod = supplyAPI === 'etherscan' ? _getUpdateSupplyEtherscan : _getUpdateSupplyBloxy;
     return new Promise(async (resolve, reject) => {
         try {
-            const supply = await supplyMethod();
+            const supply = await _getUpdateSupplyEtherscan();
             CONTRACTS.token.methods.balanceOf("0x000000000000000000000000000000000000dead").call().then(burnt => {
                 const ADJUSTED_SUPPLY = supply - (burnt / 1e18)
                 resolve({ total_supply: ADJUSTED_SUPPLY });

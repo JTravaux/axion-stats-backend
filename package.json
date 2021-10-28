@@ -10,11 +10,12 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@uniswap/sdk": "^3.0.3",
+    "@sushiswap/sdk": "^3.0.3",
     "cors": "^2.8.5",
     "dotenv": "^8.2.0",
     "ethers": "^5.0.19",
     "express": "^4.17.1",
+    "graphql-tag": "^2.12.5",
     "moment": "^2.29.1",
     "mongodb": "^3.6.2",
     "node-fetch": "^2.6.1",
